@@ -37,7 +37,7 @@ namespace OpenSignTool
 
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized))
                     {
-                        await signer.SignFile(file.Value);
+                        signer.SignFile(file.Value);
                     }
                         return 0;
                 });

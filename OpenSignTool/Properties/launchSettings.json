@@ -2,7 +2,7 @@
   "profiles": {
     "OpenSignTool": {
       "commandName": "Project",
-      "commandLineArgs": "sign -kvu https://ovst-test.vault.azure.net -kvi 0c551e6a-6a54-4f81-becb-3ae640cf2391 -kvs 8UFbf+XQZY1gp+0FeQXnZN/XHO0253GSNqOK+115NUw= -kvc OpenVsixSignTool-CIKey -f C:\\Users\\KevinJones\\Desktop\\notepad.exe"
+      "commandLineArgs": "sign -kvu https://ovst-test.vault.azure.net -kvi 0c551e6a-6a54-4f81-becb-3ae640cf2391 -kvs 8UFbf+XQZY1gp+0FeQXnZN/XHO0253GSNqOK+115NUw= -kvc OpenVsixSignTool-CIKey C:\\Users\\KevinJones\\Desktop\\notepad.exe"
     }
   }
 }

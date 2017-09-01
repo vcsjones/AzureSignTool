@@ -5,8 +5,8 @@ namespace OpenSignTool.Interop
 {
     internal static class mssign32
     {
-        [method: DllImport(nameof(mssign32), EntryPoint = "SignerSignEx2", CallingConvention = CallingConvention.Winapi)]
-        public static extern int SignerSignEx2
+        [method: DllImport(nameof(mssign32), EntryPoint = "SignerSignEx3", CallingConvention = CallingConvention.Winapi)]
+        public static extern int SignerSignEx3
         (
             [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
             [param: In] ref SIGNER_SUBJECT_INFO pSubjectInfo,
@@ -20,6 +20,7 @@ namespace OpenSignTool.Interop
             [param: In] IntPtr pSipData,
             [param: In, Out] ref SIGNER_CONTEXT ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
+            [param: In, Out] ref SIGN_INFO pSignInfo,
             [param: In] IntPtr pReserved
         );
     }
@@ -99,8 +100,8 @@ namespace OpenSignTool.Interop
     [type: StructLayout(LayoutKind.Explicit)]
     internal struct SIGNER_CERT_UNION
     {
-        [field: MarshalAs(UnmanagedType.LPWStr), FieldOffset(0)]
-        public string pwszSpcFile;
+        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
+        public IntPtr pSpcChainInfo;
     }
 
     internal enum SignerCertChoice : uint
@@ -119,6 +120,7 @@ namespace OpenSignTool.Interop
         SPC_INC_PE_DEBUG_INFO_FLAG = 0x040,
         SPC_INC_PE_RESOURCES_FLAG = 0x080,
         SPC_INC_PE_PAGE_HASHES_FLAG = 0x100,
+        UNDOCUMENTED = 0X400,
         SIG_APPEND = 0x1000
     }
 
@@ -143,8 +145,7 @@ namespace OpenSignTool.Interop
     internal struct SIGNER_FILE_INFO
     {
         public uint cbSize;
-        [field: MarshalAs(UnmanagedType.LPWStr)]
-        public string pwszFileName;
+        public IntPtr pwszFileName;
         public IntPtr hFile;
     }
 
@@ -153,4 +154,44 @@ namespace OpenSignTool.Interop
         SIGNER_SUBJECT_BLOB = 0x02,
         SIGNER_SUBJECT_FILE = 0x01
     }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct SIGN_INFO
+    {
+        public uint cbSize;
+
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public SignCallback callback;
+
+        public IntPtr pvOpaque;
+    }
+
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct CRYPTOAPI_BLOB
+    {
+        public uint cbData;
+        public IntPtr pbData;
+    }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct SIGNER_ATTR_AUTHCODE
+    {
+        public uint cbSize;
+        public uint fCommercial;
+        public uint fIndividual;
+
+        public IntPtr pwszName;
+        public IntPtr pwszInfo;
+    }
+
+    [type: UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    internal delegate int SignCallback(
+        [param: In, MarshalAs(UnmanagedType.SysInt)] IntPtr pCertContext,
+        [param: In, MarshalAs(UnmanagedType.SysInt)] IntPtr pvExtra,
+        [param: In, MarshalAs(UnmanagedType.U4)] uint algId,
+        [param: In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = 4)] byte[] pDigestToSign,
+        [param: In, MarshalAs(UnmanagedType.U4)] uint dwDigestToSign,
+        [param: Out] out CRYPTOAPI_BLOB blob
+        );
 }
