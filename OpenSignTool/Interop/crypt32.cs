@@ -32,6 +32,14 @@ namespace OpenSignTool.Interop
         public IntPtr pSigningCert;
         public SignerCertStoreInfoFlags dwCertPolicy;
         public IntPtr hCertStore;
+
+        public SIGNER_CERT_STORE_INFO(IntPtr pSigningCert, SignerCertStoreInfoFlags dwCertPolicy, IntPtr hCertStore)
+        {
+            this.cbSize = (uint)Marshal.SizeOf<SIGNER_CERT_STORE_INFO>();
+            this.pSigningCert = pSigningCert;
+            this.dwCertPolicy = dwCertPolicy;
+            this.hCertStore = hCertStore;
+        }
     }
 
     [type: Flags]

@@ -1,10 +1,7 @@
-﻿using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using OpenSignTool.Interop;
+﻿using OpenSignTool.Interop;
 using System;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace OpenSignTool
 {
@@ -31,108 +28,80 @@ namespace OpenSignTool
             }
         }
 
-        public unsafe int SignFile(string path)
+        public int SignFile(string path)
         {
             const SignerSignEx3Flags FLAGS = SignerSignEx3Flags.UNDOCUMENTED;
-            var zero = stackalloc uint[1];
-            *zero = 0;
 
-            var emptyString = Marshal.StringToHGlobalUni("");
-
-            var pathPtr = Marshal.StringToHGlobalUni(path);
-            var fileInfo = new SIGNER_FILE_INFO
+            using (var fileInfo = new AuthenticodeSignerFile(path))
+            using (var attributes = new AuthenticodeSignerAttributes(null, null))
             {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_FILE_INFO>(),
-                pwszFileName = pathPtr,
-                hFile = IntPtr.Zero
-            };
+                var storeInfo = new SIGNER_CERT_STORE_INFO(
+                    dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
+                    hCertStore: _certificateStore.Handle,
+                    pSigningCert: _configuration.PublicCertificate.Handle
+                );
 
-            var storeInfo = new SIGNER_CERT_STORE_INFO
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_CERT_STORE_INFO>(),
-                dwCertPolicy = SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
-                hCertStore = _certificateStore.DangerousGetHandle(),
-                pSigningCert = _configuration.PublicCertificate.Handle
-            };
+                var storeInfoHandle = GCHandle.Alloc(storeInfo, GCHandleType.Pinned);
 
-            var storeInfoHandle = GCHandle.Alloc(storeInfo, GCHandleType.Pinned);
-
-            var signerCert = new SIGNER_CERT
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_CERT>(),
-                dwCertChoice = SignerCertChoice.SIGNER_CERT_STORE,
-                hwnd = IntPtr.Zero,
-                union = new SIGNER_CERT_UNION
+                var signerCert = new SIGNER_CERT
                 {
-                    pSpcChainInfo = storeInfoHandle.AddrOfPinnedObject()
-                }
-            };
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_CERT>(),
+                    dwCertChoice = SignerCertChoice.SIGNER_CERT_STORE,
+                    hwnd = IntPtr.Zero,
+                    union = new SIGNER_CERT_UNION
+                    {
+                        pSpcChainInfo = storeInfoHandle.AddrOfPinnedObject()
+                    }
+                };
 
-            var authCodeAttr = new SIGNER_ATTR_AUTHCODE
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_ATTR_AUTHCODE>(),
-                pwszInfo = emptyString,
-                pwszName = emptyString
-            };
+                var signatureInfo = new SIGNER_SIGNATURE_INFO(
+                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
+                    psAuthenticated: IntPtr.Zero,
+                    psUnauthenticated: IntPtr.Zero,
+                    dwAttrChoice: SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
+                    attrAuthUnion: new SIGNER_SIGNATURE_INFO_UNION
+                    {
+                        pAttrAuthcode = attributes.Handle
+                    }
+                );
 
-            var authCodeAttrHandle = GCHandle.Alloc(authCodeAttr, GCHandleType.Pinned);
-
-            var signatureInfo = new SIGNER_SIGNATURE_INFO
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_SIGNATURE_INFO>(),
-                algidHash = AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
-                psAuthenticated = IntPtr.Zero,
-                psUnauthenticated = IntPtr.Zero,
-                dwAttrChoice = SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
-                attrAuthUnion = new SIGNER_SIGNATURE_INFO_UNION
+                var subject = new SIGNER_SUBJECT_INFO
                 {
-                    pAttrAuthcode = authCodeAttrHandle.AddrOfPinnedObject()
-                }
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>(),
+                    dwSubjectChoice = SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE,
+                    pdwIndex = IntegerCache.Zero,
+                    unionInfo = new SIGNER_SUBJECT_INFO_UNION
+                    {
+                        file = fileInfo.Handle,
+                    }
+                };
 
-            };
-
-
-            var fileInfoHandle = GCHandle.Alloc(fileInfo, GCHandleType.Pinned);
-
-            var subject = new SIGNER_SUBJECT_INFO
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>(),
-                dwSubjectChoice = SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE,
-                pdwIndex = zero,
-                unionInfo = new SIGNER_SUBJECT_INFO_UNION
+                var signInfo = new SIGN_INFO
                 {
-                    file = fileInfoHandle.AddrOfPinnedObject(),
-                }
-            };
+                    cbSize = (uint)Marshal.SizeOf<SIGN_INFO>(),
+                    pvOpaque = IntPtr.Zero,
+                    callback = SignCallback
+                };
 
-            var signInfo = new SIGN_INFO
-            {
-                cbSize = (uint)Marshal.SizeOf<SIGN_INFO>(),
-                pvOpaque = IntPtr.Zero,
-                callback = SignCallback
-            };
+                var signerContext = new SIGNER_CONTEXT();
 
-            var signerContext = new SIGNER_CONTEXT();
+                var result = mssign32.SignerSignEx3
+                (
+                    FLAGS,
+                    ref subject,
+                    ref signerCert,
+                    ref signatureInfo,
+                    IntPtr.Zero,
+                    IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
+                    ref signerContext,
+                    IntPtr.Zero,
+                    ref signInfo,
+                    IntPtr.Zero
+                );
 
-            var result = mssign32.SignerSignEx3
-            (
-                FLAGS,
-                ref subject,
-                ref signerCert,
-                ref signatureInfo,
-                IntPtr.Zero,
-                IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
-                ref signerContext,
-                IntPtr.Zero,
-                ref signInfo,
-                IntPtr.Zero
-            );
-
-            fileInfoHandle.Free();
-            storeInfoHandle.Free();
-            authCodeAttrHandle.Free();
-            Marshal.FreeHGlobal(pathPtr);
-            return result;
+                storeInfoHandle.Free();
+                return result;
+            }
         }
 
         public void Dispose()
@@ -142,12 +111,14 @@ namespace OpenSignTool
             _configuration.Dispose();
         }
 
-        private int SignCallback(IntPtr pCertContext,
-        IntPtr pvExtra,
-        uint algId,
-        byte[] pDigestToSign,
-        uint dwDigestToSign,
-        out CRYPTOAPI_BLOB blob)
+        private int SignCallback(
+            IntPtr pCertContext,
+            IntPtr pvExtra,
+            uint algId,
+            byte[] pDigestToSign,
+            uint dwDigestToSign,
+            out CRYPTOAPI_BLOB blob
+        )
         {
             var context = new KeyVaultSigningContext(_configuration);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();

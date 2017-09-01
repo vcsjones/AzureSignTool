@@ -42,7 +42,7 @@ namespace OpenSignTool
         void IDisposable.Dispose() => Dispose(true);
         ~MemoryCertificateStore() => Dispose(false);
 
-        public IntPtr DangerousGetHandle() => _store.StoreHandle;
+        public IntPtr Handle => _store.StoreHandle;
         public void Add(X509Certificate2 certificate) => _store.Add(certificate);
         public void Add(X509Certificate2Collection collection) => _store.AddRange(collection);
 

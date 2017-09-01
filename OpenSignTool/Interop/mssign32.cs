@@ -72,6 +72,21 @@ namespace OpenSignTool.Interop
         public SIGNER_SIGNATURE_INFO_UNION attrAuthUnion;
         public IntPtr psAuthenticated;
         public IntPtr psUnauthenticated;
+
+        public SIGNER_SIGNATURE_INFO(uint algidHash,
+            SignerSignatureInfoAttrChoice dwAttrChoice,
+            SIGNER_SIGNATURE_INFO_UNION attrAuthUnion,
+            IntPtr psAuthenticated,
+            IntPtr psUnauthenticated
+            )
+        {
+            cbSize = (uint)Marshal.SizeOf<SIGNER_SIGNATURE_INFO>();
+            this.algidHash = algidHash;
+            this.dwAttrChoice = dwAttrChoice;
+            this.attrAuthUnion = attrAuthUnion;
+            this.psAuthenticated = psAuthenticated;
+            this.psUnauthenticated = psUnauthenticated;
+        }
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
@@ -128,7 +143,7 @@ namespace OpenSignTool.Interop
     internal struct SIGNER_SUBJECT_INFO
     {
         public uint cbSize;
-        public unsafe uint* pdwIndex;
+        public IntPtr pdwIndex;
         public SignerSubjectInfoUnionChoice dwSubjectChoice;
         public SIGNER_SUBJECT_INFO_UNION unionInfo;
     }
@@ -147,6 +162,13 @@ namespace OpenSignTool.Interop
         public uint cbSize;
         public IntPtr pwszFileName;
         public IntPtr hFile;
+
+        public SIGNER_FILE_INFO(IntPtr pwszFileName, IntPtr hFile)
+        {
+            cbSize = (uint)Marshal.SizeOf<SIGNER_FILE_INFO>();
+            this.pwszFileName = pwszFileName;
+            this.hFile = hFile;
+        }
     }
 
     internal enum SignerSubjectInfoUnionChoice : uint
@@ -183,6 +205,15 @@ namespace OpenSignTool.Interop
 
         public IntPtr pwszName;
         public IntPtr pwszInfo;
+
+        public SIGNER_ATTR_AUTHCODE(IntPtr pwszName, IntPtr pwszInfo)
+        {
+            cbSize = (uint)Marshal.SizeOf<SIGNER_ATTR_AUTHCODE>();
+            fCommercial = 0;
+            fIndividual = 0;
+            this.pwszName = pwszName;
+            this.pwszInfo = pwszInfo;
+        }
     }
 
     [type: UnmanagedFunctionPointer(CallingConvention.Winapi)]
