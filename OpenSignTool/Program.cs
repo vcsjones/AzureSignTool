@@ -33,8 +33,7 @@ namespace OpenSignTool
                         FileDigestAlgorithm = AlgorithmFromInput(fileDigestAlgorithm.Value()).GetValueOrDefault(HashAlgorithmName.SHA256)
                     };
 
-                    var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration);
-
+                    using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized))
                     {
                         return signer.SignFile(file.Value);

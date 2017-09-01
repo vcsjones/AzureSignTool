@@ -18,20 +18,16 @@ namespace OpenSignTool.Interop
             [param: In] IntPtr pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
             [param: In] IntPtr pSipData,
-            [param: In, Out] ref SIGNER_CONTEXT ppSignerContext,
+            [param: Out] out SignerContextSafeHandle ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
             [param: In, Out] ref SIGN_INFO pSignInfo,
             [param: In] IntPtr pReserved
         );
-    }
 
-    [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_CONTEXT
-    {
-        public uint cbSize;
-        public uint cbBlob;
-        public IntPtr pbBlob;
-
+        [method: DllImport(nameof(mssign32), CallingConvention = CallingConvention.Winapi)]
+        public static extern int SignerFreeSignerContext(
+            [param: In] IntPtr pSignerContext
+        );
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
@@ -110,6 +106,14 @@ namespace OpenSignTool.Interop
         public SignerCertChoice dwCertChoice;
         public SIGNER_CERT_UNION union;
         public IntPtr hwnd;
+
+        public SIGNER_CERT(SignerCertChoice dwCertChoice, SIGNER_CERT_UNION union)
+        {
+            this.dwCertChoice = dwCertChoice;
+            this.union = union;
+            hwnd = default;
+            cbSize = (uint)Marshal.SizeOf<SIGNER_CERT>();
+        }
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
@@ -146,14 +150,26 @@ namespace OpenSignTool.Interop
         public IntPtr pdwIndex;
         public SignerSubjectInfoUnionChoice dwSubjectChoice;
         public SIGNER_SUBJECT_INFO_UNION unionInfo;
+
+        public SIGNER_SUBJECT_INFO(IntPtr pdwIndex, SignerSubjectInfoUnionChoice dwSubjectChoice, SIGNER_SUBJECT_INFO_UNION unionInfo)
+        {
+            cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>();
+            this.pdwIndex = pdwIndex;
+            this.dwSubjectChoice = dwSubjectChoice;
+            this.unionInfo = unionInfo;
+        }
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal unsafe struct SIGNER_SUBJECT_INFO_UNION
+    internal struct SIGNER_SUBJECT_INFO_UNION
     {
         [FieldOffset(0)]
         public IntPtr file;
-        //TODO: we don't support signing blobs here.
+
+        public SIGNER_SUBJECT_INFO_UNION(IntPtr file)
+        {
+            this.file = file;
+        }
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
@@ -186,6 +202,13 @@ namespace OpenSignTool.Interop
         public SignCallback callback;
 
         public IntPtr pvOpaque;
+
+        public SIGN_INFO(SignCallback callback)
+        {
+            cbSize = (uint)Marshal.SizeOf<SIGN_INFO>();
+            this.callback = callback;
+            pvOpaque = default;
+        }
     }
 
 
@@ -225,4 +248,16 @@ namespace OpenSignTool.Interop
         [param: In, MarshalAs(UnmanagedType.U4)] uint dwDigestToSign,
         [param: Out] out CRYPTOAPI_BLOB blob
         );
+
+    internal sealed class SignerContextSafeHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SignerContextSafeHandle() : base(true)
+        {
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            return mssign32.SignerFreeSignerContext(handle) == 0;
+        }
+    }
 }

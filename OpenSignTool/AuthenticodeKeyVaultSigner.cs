@@ -32,27 +32,18 @@ namespace OpenSignTool
         {
             const SignerSignEx3Flags FLAGS = SignerSignEx3Flags.UNDOCUMENTED;
 
+            using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
             using (var fileInfo = new AuthenticodeSignerFile(path))
             using (var attributes = new AuthenticodeSignerAttributes(null, null))
             {
-                var storeInfo = new SIGNER_CERT_STORE_INFO(
-                    dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
-                    hCertStore: _certificateStore.Handle,
-                    pSigningCert: _configuration.PublicCertificate.Handle
-                );
-
-                var storeInfoHandle = GCHandle.Alloc(storeInfo, GCHandleType.Pinned);
-
                 var signerCert = new SIGNER_CERT
-                {
-                    cbSize = (uint)Marshal.SizeOf<SIGNER_CERT>(),
-                    dwCertChoice = SignerCertChoice.SIGNER_CERT_STORE,
-                    hwnd = IntPtr.Zero,
-                    union = new SIGNER_CERT_UNION
+                (
+                    dwCertChoice: SignerCertChoice.SIGNER_CERT_STORE,
+                    union: new SIGNER_CERT_UNION
                     {
-                        pSpcChainInfo = storeInfoHandle.AddrOfPinnedObject()
+                        pSpcChainInfo = storeInfo.Handle
                     }
-                };
+                );
 
                 var signatureInfo = new SIGNER_SIGNATURE_INFO(
                     algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
@@ -66,41 +57,39 @@ namespace OpenSignTool
                 );
 
                 var subject = new SIGNER_SUBJECT_INFO
-                {
-                    cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>(),
-                    dwSubjectChoice = SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE,
-                    pdwIndex = IntegerCache.Zero,
-                    unionInfo = new SIGNER_SUBJECT_INFO_UNION
-                    {
-                        file = fileInfo.Handle,
-                    }
-                };
-
-                var signInfo = new SIGN_INFO
-                {
-                    cbSize = (uint)Marshal.SizeOf<SIGN_INFO>(),
-                    pvOpaque = IntPtr.Zero,
-                    callback = SignCallback
-                };
-
-                var signerContext = new SIGNER_CONTEXT();
-
-                var result = mssign32.SignerSignEx3
                 (
-                    FLAGS,
-                    ref subject,
-                    ref signerCert,
-                    ref signatureInfo,
-                    IntPtr.Zero,
-                    IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
-                    ref signerContext,
-                    IntPtr.Zero,
-                    ref signInfo,
-                    IntPtr.Zero
+                    dwSubjectChoice: SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE,
+                    pdwIndex: IntegerCache.Zero,
+                    unionInfo: new SIGNER_SUBJECT_INFO_UNION(fileInfo.Handle)
                 );
 
-                storeInfoHandle.Free();
-                return result;
+                var signInfo = new SIGN_INFO(callback: SignCallback);
+                SignerContextSafeHandle signerContext = null;
+                int result = unchecked((int)0xFFFFFFFF);
+                try
+                {
+                    result = mssign32.SignerSignEx3
+                    (
+                        FLAGS,
+                        ref subject,
+                        ref signerCert,
+                        ref signatureInfo,
+                        IntPtr.Zero,
+                        IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
+                        out signerContext,
+                        IntPtr.Zero,
+                        ref signInfo,
+                        IntPtr.Zero
+                    );
+                    return result; 
+                }
+                finally
+                {
+                    if (result == 0 && !signerContext?.IsInvalid == false)
+                    {
+                        signerContext.Close();
+                    }
+                }
             }
         }
 
