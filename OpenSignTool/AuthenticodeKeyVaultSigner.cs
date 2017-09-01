@@ -31,7 +31,7 @@ namespace OpenSignTool
             }
         }
 
-        public unsafe void SignFile(string path)
+        public unsafe int SignFile(string path)
         {
             const SignerSignEx3Flags FLAGS = SignerSignEx3Flags.UNDOCUMENTED;
             var zero = stackalloc uint[1];
@@ -132,6 +132,7 @@ namespace OpenSignTool
             storeInfoHandle.Free();
             authCodeAttrHandle.Free();
             Marshal.FreeHGlobal(pathPtr);
+            return result;
         }
 
         public void Dispose()
