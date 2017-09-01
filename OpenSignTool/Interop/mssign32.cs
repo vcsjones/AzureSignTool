@@ -12,7 +12,7 @@ namespace OpenSignTool.Interop
             [param: In] ref SIGNER_SUBJECT_INFO pSubjectInfo,
             [param: In] ref SIGNER_CERT pSignerCert,
             [param: In] ref SIGNER_SIGNATURE_INFO pSignatureInfo,
-            [param: In] ref SIGNER_PROVIDER_INFO pProviderInfo,
+            [param: In] IntPtr pProviderInfo,
             [param: In] IntPtr dwTimestampFlags,
             [param: In] IntPtr pszTimestampAlgorithmOid,
             [param: In] IntPtr pwszHttpTimeStamp,

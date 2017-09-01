@@ -80,8 +80,7 @@ namespace OpenSignTool
             var signatureInfo = new SIGNER_SIGNATURE_INFO
             {
                 cbSize = (uint)Marshal.SizeOf<SIGNER_SIGNATURE_INFO>(),
-                //TODO: don't hardcode SHA256
-                algidHash = 0x0000800c,
+                algidHash = AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
                 psAuthenticated = IntPtr.Zero,
                 psUnauthenticated = IntPtr.Zero,
                 dwAttrChoice = SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
@@ -114,11 +113,6 @@ namespace OpenSignTool
             };
 
             var signerContext = new SIGNER_CONTEXT();
-            var providerInfo = new SIGNER_PROVIDER_INFO();
-            providerInfo.pwszProviderName = "";
-            providerInfo.union.pwszKeyContainer = "";
-            providerInfo.dwPvkChoice = 0x2;
-            providerInfo.cbSize = (uint)Marshal.SizeOf<SIGNER_PROVIDER_INFO>();
 
             var result = mssign32.SignerSignEx3
             (
@@ -126,7 +120,7 @@ namespace OpenSignTool
                 ref subject,
                 ref signerCert,
                 ref signatureInfo,
-                ref providerInfo,
+                IntPtr.Zero,
                 IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
                 ref signerContext,
                 IntPtr.Zero,
@@ -135,6 +129,7 @@ namespace OpenSignTool
             );
 
             fileInfoHandle.Free();
+            storeInfoHandle.Free();
             authCodeAttrHandle.Free();
             Marshal.FreeHGlobal(pathPtr);
         }

@@ -44,7 +44,7 @@ namespace OpenSignTool
         public async Task<byte[]> SignDigestAsync(byte[] digest)
         {
             var client = _configuration.Client;
-            var algorithm = SignatureAlgorithmTranslator.SignatureAlgorithmToJwsAlgId(_configuration.FileDigestAlgorithm);
+            var algorithm = AlgorithmTranslator.SignatureAlgorithmToJwsAlgId(_configuration.FileDigestAlgorithm);
             var signature = await client.SignAsync(_configuration.Key.KeyIdentifier.Identifier, algorithm, digest);
             return signature.Result;
         }
