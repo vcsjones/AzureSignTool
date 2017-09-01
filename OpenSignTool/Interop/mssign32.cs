@@ -31,35 +31,6 @@ namespace OpenSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_PROVIDER_INFO
-    {
-        public uint cbSize;
-        [field: MarshalAs(UnmanagedType.LPWStr)]
-        public string pwszProviderName;
-
-        public uint dwProviderType;
-        public uint dwKeySpec;
-        public uint dwPvkChoice;
-        public SIGNER_PROVIDER_INFO_UNION union;
-    }
-
-    internal enum PvkUnionChoice : uint
-    {
-        PVK_TYPE_FILE_NAME = 0x01,
-        PVK_TYPE_KEYCONTAINER = 0x02
-    }
-
-    [type: StructLayout(LayoutKind.Explicit)]
-    internal struct SIGNER_PROVIDER_INFO_UNION
-    {
-        [field: MarshalAs(UnmanagedType.LPWStr), FieldOffset(0)]
-        public string pwszPvkFileName;
-
-        [field: MarshalAs(UnmanagedType.LPWStr), FieldOffset(0)]
-        public string pwszKeyContainer;
-    }
-
-    [type: StructLayout(LayoutKind.Sequential)]
     internal struct SIGNER_SIGNATURE_INFO
     {
         public uint cbSize;
