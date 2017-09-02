@@ -7,7 +7,7 @@ of options for signing and options for authenticating to Azure Key Vault.
 
 Example usage:
 
-    AzureKeyVault.exe sign -du "https://vcsjones.com" \
+    AzureSignTool.exe sign -du "https://vcsjones.com" \
 	  -fd sha384 -kvu https://my-vault.vault.azure.net \
 	  -kvi 01234567-abcd-ef012-0000-0123456789ab \
 	  -kvs <token> \
