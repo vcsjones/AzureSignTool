@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     internal static class KeyVaultConfigurationDiscoverer
     {

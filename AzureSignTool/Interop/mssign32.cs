@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace OpenSignTool.Interop
+namespace AzureSignTool.Interop
 {
     internal static class mssign32
     {

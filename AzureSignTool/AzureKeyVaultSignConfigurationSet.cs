@@ -1,7 +1,7 @@
 ﻿
 using Crypto = System.Security.Cryptography;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public sealed class AzureKeyVaultSignConfigurationSet
     {

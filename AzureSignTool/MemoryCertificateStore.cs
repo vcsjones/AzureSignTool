@@ -1,9 +1,9 @@
-﻿using OpenSignTool.Interop;
+﻿using AzureSignTool.Interop;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public sealed class MemoryCertificateStore : IDisposable
     {

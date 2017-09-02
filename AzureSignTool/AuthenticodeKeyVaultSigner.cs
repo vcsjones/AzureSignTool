@@ -1,9 +1,9 @@
-﻿using OpenSignTool.Interop;
+﻿using AzureSignTool.Interop;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public class AuthenticodeKeyVaultSigner : IDisposable
     {
@@ -28,13 +28,13 @@ namespace OpenSignTool
             }
         }
 
-        public int SignFile(string path)
+        public int SignFile(string path, string description, string descriptionUrl)
         {
             const SignerSignEx3Flags FLAGS = SignerSignEx3Flags.UNDOCUMENTED;
 
             using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
             using (var fileInfo = new AuthenticodeSignerFile(path))
-            using (var attributes = new AuthenticodeSignerAttributes(null, null))
+            using (var attributes = new AuthenticodeSignerAttributes(description, descriptionUrl))
             {
                 var signerCert = new SIGNER_CERT
                 (

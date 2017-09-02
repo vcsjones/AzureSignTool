@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System.Security.Cryptography;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     class Program
     {
@@ -18,6 +18,8 @@ namespace OpenSignTool
                 var azureKeyVaultClientSecret = cfg.Option("-kvs | --azure-key-vault-client-secret", "The Client Secret to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue);
                 var azureKeyVaultCertificateName = cfg.Option("-kvc | --azure-key-vault-certificate", "The name of the certificate in Azure Key Vault.", CommandOptionType.SingleValue);
                 var azureKeyVaultAccessToken = cfg.Option("-kva | --azure-key-vault-accesstoken", "The Access Token to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue);
+                var description = cfg.Option("-d | --description", "Provide a description of the signed content.", CommandOptionType.SingleValue);
+                var descriptionUrl = cfg.Option("-du | --description-url", "Provide a URL with more information about the signed content.", CommandOptionType.SingleValue);
                 var file = cfg.Argument("file", "The path to the file.");
                 cfg.HelpOption("-? | -h | --help");
 
@@ -36,10 +38,14 @@ namespace OpenSignTool
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized))
                     {
-                        return signer.SignFile(file.Value);
+                        return signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
                     }
                 });
             });
+            if (args.Length == 0)
+            {
+                application.ShowHelp();
+            }
             return application.Execute(args);
         }
 

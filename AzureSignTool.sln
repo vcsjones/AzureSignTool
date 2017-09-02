@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSignTool", "OpenSignTool\OpenSignTool.csproj", "{98E0A863-FE5E-452F-BF05-427F92915D24}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSignTool", "AzureSignTool\AzureSignTool.csproj", "{98E0A863-FE5E-452F-BF05-427F92915D24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

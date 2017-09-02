@@ -1,9 +1,9 @@
-﻿using OpenSignTool.Interop;
+﻿using AzureSignTool.Interop;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public class AuthenticodeSignerCertStoreInfo : IDisposable
     {

@@ -1,8 +1,8 @@
-﻿using OpenSignTool.Interop;
+﻿using AzureSignTool.Interop;
 using System;
 using System.Runtime.InteropServices;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public class AuthenticodeSignerAttributes : IDisposable
     {

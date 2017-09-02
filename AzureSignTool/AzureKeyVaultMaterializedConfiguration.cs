@@ -4,7 +4,7 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using Crypto = System.Security.Cryptography;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public class AzureKeyVaultMaterializedConfiguration : IDisposable
     {

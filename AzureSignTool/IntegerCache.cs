@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
     public static class IntegerCache
     {

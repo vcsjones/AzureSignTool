@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 
 
-namespace OpenSignTool
+namespace AzureSignTool
 {
 
     /// <summary>
