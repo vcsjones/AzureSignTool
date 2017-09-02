@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace AzureSignTool
@@ -30,6 +32,20 @@ namespace AzureSignTool
 
                 cfg.OnExecute(async () =>
                 {
+                    if (!CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
+                        ! CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
+                    {
+                        return 1;
+                    }
+                    if (!azureKeyVaultAccessToken.HasValue() && !CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
+                    {
+                        return 1;
+                    }
+                    if (string.IsNullOrWhiteSpace(file.Value))
+                    {
+                        Console.WriteLine("File is required.");
+                        return 1;
+                    }
                     var configuration = new AzureKeyVaultSignConfigurationSet
                     {
                         AzureKeyVaultUrl = azureKeyVaultUrl.Value(),
@@ -50,8 +66,6 @@ namespace AzureSignTool
                             AlgorithmFromInput(rfc3161Digest.Value()).GetValueOrDefault(HashAlgorithmName.SHA256) :
                             HashAlgorithmName.SHA256
                     };
-
-
 
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration))
@@ -87,6 +101,32 @@ namespace AzureSignTool
                     return null;
 
             }
+        }
+
+        private static bool CheckMutuallyExclusive(params CommandOption[] commands)
+        {
+            if (commands.Length < 2)
+            {
+                return true;
+            }
+            var set = new HashSet<string>(commands.Where(c => c.HasValue()).Select(c => $"-{c.ShortName}"));
+            if (set.Count > 1)
+            {
+                Console.WriteLine($"Cannot use {String.Join(", ", set)} options together.");
+                return false;
+            }
+            return true;
+        }
+
+        private static bool CheckRequired(params CommandOption[] commands)
+        {
+            var set = new HashSet<string>(commands.Where(c => !c.HasValue()).Select(c => $"-{c.ShortName}"));
+            if (set.Count > 0)
+            {
+                Console.WriteLine($"Options {String.Join(", ", set)} are required.");
+                return false;
+            }
+            return true;
         }
     }
 }
