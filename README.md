@@ -23,9 +23,6 @@ Windows 10 or Windows Server 2016 is required.
 
 ## Current Limitations
 
-Current Timestamping is not available. It can be worked around using the native Windows `signtool`'s `timestamp`
-command to timestamp existing signatures.
-
 SHA1 signing is not supported by Azure Key Vault.
 
 Dual signing is not supported. This appears to be a limitation of the API used.
