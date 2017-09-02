@@ -8,11 +8,13 @@ namespace AzureSignTool
     public class AuthenticodeKeyVaultSigner : IDisposable
     {
         private readonly AzureKeyVaultMaterializedConfiguration _configuration;
+        private readonly TimeStampConfiguration _timeStampConfiguration;
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
 
-        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration)
+        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration)
         {
+            _timeStampConfiguration = timeStampConfiguration;
             _configuration = configuration;
             _certificateStore = MemoryCertificateStore.Create();
             _chain = new X509Chain();
@@ -65,27 +67,50 @@ namespace AzureSignTool
 
                 var signInfo = new SIGN_INFO(callback: SignCallback);
                 SignerContextSafeHandle signerContext = null;
-                int result = unchecked((int)0xFFFFFFFF);
+                SignerSignTimeStampFlags timeStampFlags;
+                string timestampAlgorithmOid;
+                string timestampUrl;
+                switch (_timeStampConfiguration.Type)
+                {
+                    case TimeStampType.Authenticode:
+                        timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_AUTHENTICODE;
+                        timestampAlgorithmOid = null;
+                        timestampUrl = _timeStampConfiguration.Url;
+                        break;
+                    case TimeStampType.RFC3161:
+                        timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_RFC3161;
+                        timestampAlgorithmOid = AlgorithmTranslator.HashAlgorithmToOid(_timeStampConfiguration.DigestAlgorithm);
+                        timestampUrl = _timeStampConfiguration.Url;
+                        break;
+                    default:
+                        timeStampFlags = 0;
+                        timestampAlgorithmOid = null;
+                        timestampUrl = null;
+                        break;
+
+                }
                 try
                 {
-                    result = mssign32.SignerSignEx3
+                    return mssign32.SignerSignEx3
                     (
                         FLAGS,
                         ref subject,
                         ref signerCert,
                         ref signatureInfo,
                         IntPtr.Zero,
-                        IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
+                        timeStampFlags,
+                        timeStampFlags != 0 ? AlgorithmTranslator.HashAlgorithmToOid(_timeStampConfiguration.DigestAlgorithm) : null,
+                        timeStampFlags != 0 ? _timeStampConfiguration.Url : null,
+                        IntPtr.Zero, IntPtr.Zero,
                         out signerContext,
                         IntPtr.Zero,
                         ref signInfo,
                         IntPtr.Zero
                     );
-                    return result; 
                 }
                 finally
                 {
-                    if (result == 0 && !signerContext?.IsInvalid == false)
+                    if (signerContext?.IsInvalid == false)
                     {
                         signerContext.Close();
                     }

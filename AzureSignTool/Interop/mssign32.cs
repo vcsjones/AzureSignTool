@@ -13,9 +13,9 @@ namespace AzureSignTool.Interop
             [param: In] ref SIGNER_CERT pSignerCert,
             [param: In] ref SIGNER_SIGNATURE_INFO pSignatureInfo,
             [param: In] IntPtr pProviderInfo,
-            [param: In] IntPtr dwTimestampFlags,
-            [param: In] IntPtr pszTimestampAlgorithmOid,
-            [param: In] IntPtr pwszHttpTimeStamp,
+            [param: In] SignerSignTimeStampFlags dwTimestampFlags,
+            [param: In, MarshalAs(UnmanagedType.LPStr)] string pszTimestampAlgorithmOid,
+            [param: In, MarshalAs(UnmanagedType.LPWStr)] string pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
             [param: In] IntPtr pSipData,
             [param: Out] out SignerContextSafeHandle ppSignerContext,
@@ -61,6 +61,12 @@ namespace AzureSignTool.Interop
     {
         [field: FieldOffset(0)]
         public IntPtr pAttrAuthcode;
+    }
+
+    internal enum SignerSignTimeStampFlags : uint
+    {
+        SIGNER_TIMESTAMP_AUTHENTICODE = 1,
+        SIGNER_TIMESTAMP_RFC3161 = 2,
     }
 
     internal enum SignerSignatureInfoAttrChoice : uint
