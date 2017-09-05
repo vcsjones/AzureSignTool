@@ -13,7 +13,7 @@ Example usage:
 	  -kvs <token> \
 	  -kvc my-key-name \
 	  -tr http://timestamp.digicert.com \
-	  -td sha2384
+	  -td sha384
 	  C:\path\to\program.exe
 	  
 	  
