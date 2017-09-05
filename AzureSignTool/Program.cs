@@ -53,7 +53,7 @@ namespace AzureSignTool
                         AzureClientId = azureKeyVaultClientId.Value(),
                         AzureAccessToken = azureKeyVaultAccessToken.Value(),
                         AzureClientSecret = azureKeyVaultClientSecret.Value(),
-                        FileDigestAlgorithm = AlgorithmFromInput(fileDigestAlgorithm.Value()).GetValueOrDefault(HashAlgorithmName.SHA256)
+                        FileDigestAlgorithm = GetValueFromOption(fileDigestAlgorithm, AlgorithmFromInput, HashAlgorithmName.SHA256)
                     };
 
                     var timestampConfiguration = new TimeStampConfiguration
@@ -62,16 +62,22 @@ namespace AzureSignTool
                               acTimeStamp.HasValue() ? acTimeStamp.Value() : null,
                         Type = rfc3161TimeStamp.HasValue() ? TimeStampType.RFC3161 :
                               acTimeStamp.HasValue() ? TimeStampType.Authenticode : TimeStampType.None,
-                        DigestAlgorithm = rfc3161Digest.HasValue() ?
-                            AlgorithmFromInput(rfc3161Digest.Value()).GetValueOrDefault(HashAlgorithmName.SHA256) :
-                            HashAlgorithmName.SHA256
+                        DigestAlgorithm = GetValueFromOption(rfc3161Digest, AlgorithmFromInput, HashAlgorithmName.SHA256)
                     };
 
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration))
                     {
+                        const int S_OK = 0;
                         var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
-                        Console.WriteLine($"Signing completed as {result}.");
+                        if (result == S_OK)
+                        {
+                            Console.WriteLine("Signing completed successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Signing failed with error {result}.");
+                        }
                         return result;
                     }
                 });
@@ -127,6 +133,24 @@ namespace AzureSignTool
                 return false;
             }
             return true;
+        }
+
+        private static T GetValueFromOption<T>(CommandOption option, Func<string, T> transform, T defaultIfNull) where T:class
+        {
+            if (!option.HasValue())
+            {
+                return defaultIfNull;
+            }
+            return transform(option.Value()) ?? defaultIfNull;
+        }
+
+        private static T GetValueFromOption<T>(CommandOption option, Func<string, T?> transform, T defaultIfNull) where T:struct
+        {
+            if (!option.HasValue())
+            {
+                return defaultIfNull;
+            }
+            return transform(option.Value()) ?? defaultIfNull;
         }
     }
 }
