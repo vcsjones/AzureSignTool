@@ -9,16 +9,16 @@ namespace AzureSignTool.Interop
         public static extern int SignerSignEx3
         (
             [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
-            [param: In] ref SIGNER_SUBJECT_INFO pSubjectInfo,
-            [param: In] ref SIGNER_CERT pSignerCert,
-            [param: In] ref SIGNER_SIGNATURE_INFO pSignatureInfo,
+            [param: In] IntPtr pSubjectInfo,
+            [param: In] IntPtr pSignerCert,
+            [param: In] IntPtr pSignatureInfo,
             [param: In] IntPtr pProviderInfo,
             [param: In] SignerSignTimeStampFlags dwTimestampFlags,
-            [param: In, MarshalAs(UnmanagedType.LPStr)] string pszTimestampAlgorithmOid,
-            [param: In, MarshalAs(UnmanagedType.LPWStr)] string pwszHttpTimeStamp,
+            [param: In] IntPtr pszTimestampAlgorithmOid,
+            [param: In] IntPtr pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
             [param: In] IntPtr pSipData,
-            [param: Out] out SignerContextSafeHandle ppSignerContext,
+            [param: In] IntPtr ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
             [param: In, Out] ref SIGN_INFO pSignInfo,
             [param: In] IntPtr pReserved
@@ -175,12 +175,11 @@ namespace AzureSignTool.Interop
     {
         public uint cbSize;
 
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public SignCallback callback;
+        public IntPtr callback;
 
         public IntPtr pvOpaque;
 
-        public SIGN_INFO(SignCallback callback)
+        public SIGN_INFO(IntPtr callback)
         {
             cbSize = (uint)Marshal.SizeOf<SIGN_INFO>();
             this.callback = callback;
@@ -215,6 +214,61 @@ namespace AzureSignTool.Interop
             this.pwszInfo = pwszInfo;
         }
     }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct SIGNER_SIGN_EX2_PARAMS
+    {
+        public SignerSignEx3Flags dwFlags;
+        public IntPtr pSubjectInfo;
+        public IntPtr pSignerCert;
+        public IntPtr pSignatureInfo;
+        public IntPtr pProviderInfo;
+        public SignerSignTimeStampFlags dwTimestampFlags;
+        public IntPtr pszTimestampAlgorithmOid;
+        public IntPtr pwszHttpTimeStamp;
+        public IntPtr psRequest;
+        public IntPtr pSipData;
+        public IntPtr ppSignerContext;
+        public IntPtr pCryptoPolicy;
+        public IntPtr pReserved;
+    }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct APPX_SIP_CLIENT_DATA
+    {
+        public IntPtr pSignerParams;
+        public IntPtr pAppxSipState;
+
+    }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct SIGNER_PROVIDER_INFO
+    {
+        public uint cbSize;
+        public IntPtr pwszProviderName;
+
+        public uint dwProviderType;
+        public uint dwKeySpec;
+        public uint dwPvkChoice;
+        public SIGNER_PROVIDER_INFO_UNION union;
+    }
+
+    internal enum PvkUnionChoice : uint
+    {
+        PVK_TYPE_FILE_NAME = 0x01,
+        PVK_TYPE_KEYCONTAINER = 0x02
+    }
+
+    [type: StructLayout(LayoutKind.Explicit)]
+    internal struct SIGNER_PROVIDER_INFO_UNION
+    {
+        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
+        public IntPtr pwszPvkFileName;
+
+        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
+        public IntPtr pwszKeyContainer;
+    }
+
 
     [type: UnmanagedFunctionPointer(CallingConvention.Winapi)]
     internal delegate int SignCallback(
