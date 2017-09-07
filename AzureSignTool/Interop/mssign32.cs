@@ -20,7 +20,7 @@ namespace AzureSignTool.Interop
             [param: In] IntPtr pSipData,
             [param: In] IntPtr ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
-            [param: In, Out] ref SIGN_INFO pSignInfo,
+            [param: In] IntPtr pSignInfo,
             [param: In] IntPtr pReserved
         );
 
@@ -216,7 +216,7 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_SIGN_EX2_PARAMS
+    internal struct SIGNER_SIGN_EX3_PARAMS
     {
         public SignerSignEx3Flags dwFlags;
         public IntPtr pSubjectInfo;
@@ -227,7 +227,7 @@ namespace AzureSignTool.Interop
         public IntPtr pszTimestampAlgorithmOid;
         public IntPtr pwszHttpTimeStamp;
         public IntPtr psRequest;
-        public IntPtr pSipData;
+        public IntPtr pSignCallBack;
         public IntPtr ppSignerContext;
         public IntPtr pCryptoPolicy;
         public IntPtr pReserved;
@@ -240,35 +240,6 @@ namespace AzureSignTool.Interop
         public IntPtr pAppxSipState;
 
     }
-
-    [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_PROVIDER_INFO
-    {
-        public uint cbSize;
-        public IntPtr pwszProviderName;
-
-        public uint dwProviderType;
-        public uint dwKeySpec;
-        public uint dwPvkChoice;
-        public SIGNER_PROVIDER_INFO_UNION union;
-    }
-
-    internal enum PvkUnionChoice : uint
-    {
-        PVK_TYPE_FILE_NAME = 0x01,
-        PVK_TYPE_KEYCONTAINER = 0x02
-    }
-
-    [type: StructLayout(LayoutKind.Explicit)]
-    internal struct SIGNER_PROVIDER_INFO_UNION
-    {
-        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
-        public IntPtr pwszPvkFileName;
-
-        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
-        public IntPtr pwszKeyContainer;
-    }
-
 
     [type: UnmanagedFunctionPointer(CallingConvention.Winapi)]
     internal delegate int SignCallback(
