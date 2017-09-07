@@ -9,18 +9,18 @@ namespace AzureSignTool.Interop
         public static extern int SignerSignEx3
         (
             [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
-            [param: In] ref SIGNER_SUBJECT_INFO pSubjectInfo,
-            [param: In] ref SIGNER_CERT pSignerCert,
-            [param: In] ref SIGNER_SIGNATURE_INFO pSignatureInfo,
+            [param: In] IntPtr pSubjectInfo,
+            [param: In] IntPtr pSignerCert,
+            [param: In] IntPtr pSignatureInfo,
             [param: In] IntPtr pProviderInfo,
             [param: In] SignerSignTimeStampFlags dwTimestampFlags,
-            [param: In, MarshalAs(UnmanagedType.LPStr)] string pszTimestampAlgorithmOid,
-            [param: In, MarshalAs(UnmanagedType.LPWStr)] string pwszHttpTimeStamp,
+            [param: In] IntPtr pszTimestampAlgorithmOid,
+            [param: In] IntPtr pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
             [param: In] IntPtr pSipData,
-            [param: Out] out SignerContextSafeHandle ppSignerContext,
+            [param: In] IntPtr ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
-            [param: In, Out] ref SIGN_INFO pSignInfo,
+            [param: In] IntPtr pSignInfo,
             [param: In] IntPtr pReserved
         );
 
@@ -175,12 +175,11 @@ namespace AzureSignTool.Interop
     {
         public uint cbSize;
 
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public SignCallback callback;
+        public IntPtr callback;
 
         public IntPtr pvOpaque;
 
-        public SIGN_INFO(SignCallback callback)
+        public SIGN_INFO(IntPtr callback)
         {
             cbSize = (uint)Marshal.SizeOf<SIGN_INFO>();
             this.callback = callback;
@@ -216,6 +215,32 @@ namespace AzureSignTool.Interop
         }
     }
 
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct SIGNER_SIGN_EX3_PARAMS
+    {
+        public SignerSignEx3Flags dwFlags;
+        public IntPtr pSubjectInfo;
+        public IntPtr pSignerCert;
+        public IntPtr pSignatureInfo;
+        public IntPtr pProviderInfo;
+        public SignerSignTimeStampFlags dwTimestampFlags;
+        public IntPtr pszTimestampAlgorithmOid;
+        public IntPtr pwszHttpTimeStamp;
+        public IntPtr psRequest;
+        public IntPtr pSignCallBack;
+        public IntPtr ppSignerContext;
+        public IntPtr pCryptoPolicy;
+        public IntPtr pReserved;
+    }
+
+    [type: StructLayout(LayoutKind.Sequential)]
+    internal struct APPX_SIP_CLIENT_DATA
+    {
+        public IntPtr pSignerParams;
+        public IntPtr pAppxSipState;
+
+    }
+
     [type: UnmanagedFunctionPointer(CallingConvention.Winapi)]
     internal delegate int SignCallback(
         [param: In, MarshalAs(UnmanagedType.SysInt)] IntPtr pCertContext,
@@ -225,16 +250,4 @@ namespace AzureSignTool.Interop
         [param: In, MarshalAs(UnmanagedType.U4)] uint dwDigestToSign,
         [param: Out] out CRYPTOAPI_BLOB blob
         );
-
-    internal sealed class SignerContextSafeHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SignerContextSafeHandle() : base(true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return mssign32.SignerFreeSignerContext(handle) == 0;
-        }
-    }
 }

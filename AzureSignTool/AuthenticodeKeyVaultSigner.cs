@@ -1,5 +1,6 @@
 ﻿using AzureSignTool.Interop;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -32,41 +33,14 @@ namespace AzureSignTool
 
         public int SignFile(string path, string description, string descriptionUrl)
         {
-            const SignerSignEx3Flags FLAGS = SignerSignEx3Flags.UNDOCUMENTED;
+            var flags = SignerSignEx3Flags.UNDOCUMENTED;
 
+            using (var contextReceiver = new PrimitiveStructureOutManager())
+            using (var sipState = new PrimitiveStructureOutManager())
             using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
             using (var fileInfo = new AuthenticodeSignerFile(path))
             using (var attributes = new AuthenticodeSignerAttributes(description, descriptionUrl))
             {
-                var signerCert = new SIGNER_CERT
-                (
-                    dwCertChoice: SignerCertChoice.SIGNER_CERT_STORE,
-                    union: new SIGNER_CERT_UNION
-                    {
-                        pSpcChainInfo = storeInfo.Handle
-                    }
-                );
-
-                var signatureInfo = new SIGNER_SIGNATURE_INFO(
-                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
-                    psAuthenticated: IntPtr.Zero,
-                    psUnauthenticated: IntPtr.Zero,
-                    dwAttrChoice: SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
-                    attrAuthUnion: new SIGNER_SIGNATURE_INFO_UNION
-                    {
-                        pAttrAuthcode = attributes.Handle
-                    }
-                );
-
-                var subject = new SIGNER_SUBJECT_INFO
-                (
-                    dwSubjectChoice: SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE,
-                    pdwIndex: IntegerCache.Zero,
-                    unionInfo: new SIGNER_SUBJECT_INFO_UNION(fileInfo.Handle)
-                );
-
-                var signInfo = new SIGN_INFO(callback: SignCallback);
-                SignerContextSafeHandle signerContext = null;
                 SignerSignTimeStampFlags timeStampFlags;
                 string timestampAlgorithmOid;
                 string timestampUrl;
@@ -87,32 +61,36 @@ namespace AzureSignTool
                         timestampAlgorithmOid = null;
                         timestampUrl = null;
                         break;
+                }
 
-                }
-                try
+                using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl, timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
                 {
-                    return mssign32.SignerSignEx3
-                    (
-                        FLAGS,
-                        ref subject,
-                        ref signerCert,
-                        ref signatureInfo,
-                        IntPtr.Zero,
-                        timeStampFlags,
-                        timestampAlgorithmOid,
-                        timestampUrl,
-                        IntPtr.Zero, IntPtr.Zero,
-                        out signerContext,
-                        IntPtr.Zero,
-                        ref signInfo,
-                        IntPtr.Zero
-                    );
-                }
-                finally
-                {
-                    if (signerContext?.IsInvalid == false)
+                    try
                     {
-                        signerContext.Close();
+                        return mssign32.SignerSignEx3
+                        (
+                            data.ModifyFlags(flags),
+                            data.SubjectInfoHandle,
+                            data.SignerCertHandle,
+                            data.SignatureInfoHandle,
+                            IntPtr.Zero,
+                            timeStampFlags,
+                            data.TimestampAlgorithmOidHandle,
+                            data.TimestampUrlHandle,
+                            IntPtr.Zero,
+                            data.SipDataHandle,
+                            contextReceiver.Handle,
+                            IntPtr.Zero,
+                            data.SignInfoHandle,
+                            IntPtr.Zero
+                        );
+                    }
+                    finally
+                    {
+                        if (contextReceiver.Object.HasValue)
+                        {
+                            mssign32.SignerFreeSignerContext(contextReceiver.Object.Value);
+                        }
                     }
                 }
             }

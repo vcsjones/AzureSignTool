@@ -76,7 +76,7 @@ namespace AzureSignTool
                         }
                         else
                         {
-                            Console.WriteLine($"Signing failed with error {result}.");
+                            Console.WriteLine($"Signing failed with error {result:X2}.");
                         }
                         return result;
                     }
