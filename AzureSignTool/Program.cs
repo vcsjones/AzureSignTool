@@ -76,6 +76,12 @@ namespace AzureSignTool
                         }
                         else
                         {
+                            switch (result)
+                            {
+                                case unchecked((int)0x8007000B):
+                                    Console.WriteLine("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                    break;
+                            }
                             Console.WriteLine($"Signing failed with error {result:X2}.");
                         }
                         return result;
