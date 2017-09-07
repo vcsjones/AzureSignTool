@@ -250,16 +250,4 @@ namespace AzureSignTool.Interop
         [param: In, MarshalAs(UnmanagedType.U4)] uint dwDigestToSign,
         [param: Out] out CRYPTOAPI_BLOB blob
         );
-
-    internal sealed class SignerContextSafeHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SignerContextSafeHandle() : base(true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return mssign32.SignerFreeSignerContext(handle) == 0;
-        }
-    }
 }
