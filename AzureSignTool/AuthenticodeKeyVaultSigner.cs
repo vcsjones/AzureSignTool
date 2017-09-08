@@ -33,10 +33,10 @@ namespace AzureSignTool
 
         public int SignFile(string path, string description, string descriptionUrl)
         {
-            var flags = SignerSignEx3Flags.UNDOCUMENTED;
+            var flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
 
-            using (var contextReceiver = new PrimitiveStructureOutManager())
-            using (var sipState = new PrimitiveStructureOutManager())
+            using (var contextReceiver = PrimitiveStructureOutManager.Create(mssign32.SignerFreeSignerContext))
+            using (var sipState = PrimitiveStructureOutManager.Create())
             using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
             using (var fileInfo = new AuthenticodeSignerFile(path))
             using (var attributes = new AuthenticodeSignerAttributes(description, descriptionUrl))
@@ -63,35 +63,26 @@ namespace AzureSignTool
                         break;
                 }
 
-                using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl, timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
+                using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl,
+                    timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
                 {
-                    try
-                    {
-                        return mssign32.SignerSignEx3
-                        (
-                            data.ModifyFlags(flags),
-                            data.SubjectInfoHandle,
-                            data.SignerCertHandle,
-                            data.SignatureInfoHandle,
-                            IntPtr.Zero,
-                            timeStampFlags,
-                            data.TimestampAlgorithmOidHandle,
-                            data.TimestampUrlHandle,
-                            IntPtr.Zero,
-                            data.SipDataHandle,
-                            contextReceiver.Handle,
-                            IntPtr.Zero,
-                            data.SignInfoHandle,
-                            IntPtr.Zero
-                        );
-                    }
-                    finally
-                    {
-                        if (contextReceiver.Object.HasValue)
-                        {
-                            mssign32.SignerFreeSignerContext(contextReceiver.Object.Value);
-                        }
-                    }
+                    return mssign32.SignerSignEx3
+                    (
+                        data.ModifyFlags(flags),
+                        data.SubjectInfoHandle,
+                        data.SignerCertHandle,
+                        data.SignatureInfoHandle,
+                        IntPtr.Zero,
+                        timeStampFlags,
+                        data.TimestampAlgorithmOidHandle,
+                        data.TimestampUrlHandle,
+                        IntPtr.Zero,
+                        data.SipDataHandle,
+                        contextReceiver.Handle,
+                        IntPtr.Zero,
+                        data.SignInfoHandle,
+                        IntPtr.Zero
+                    );
                 }
             }
         }
