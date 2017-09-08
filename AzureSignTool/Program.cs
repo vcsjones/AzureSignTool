@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace AzureSignTool
 {
@@ -10,6 +11,7 @@ namespace AzureSignTool
     {
         static int Main(string[] args)
         {
+            LoggerServiceLocator.Current = new ConsoleLogger();
             var application = new CommandLineApplication(throwOnUnexpectedArg: false);
             var signCommand = application.Command("sign", throwOnUnexpectedArg: false, configuration: cfg =>
             {
@@ -32,18 +34,18 @@ namespace AzureSignTool
 
                 cfg.OnExecute(async () =>
                 {
-                    if (!CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
-                        ! CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
+                    if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
+                        ! await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
                     {
                         return 1;
                     }
-                    if (!azureKeyVaultAccessToken.HasValue() && !CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
+                    if (!azureKeyVaultAccessToken.HasValue() && !await CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
                     {
                         return 1;
                     }
                     if (string.IsNullOrWhiteSpace(file.Value))
                     {
-                        Console.WriteLine("File is required.");
+                        await LoggerServiceLocator.Current.Log("File is required.");
                         return 1;
                     }
                     var configuration = new AzureKeyVaultSignConfigurationSet
@@ -66,25 +68,32 @@ namespace AzureSignTool
                     };
 
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
-                    using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration))
                     {
-                        const int S_OK = 0;
-                        var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
-                        if (result == S_OK)
+                        if (materialized == null)
                         {
-                            Console.WriteLine("Signing completed successfully.");
+                            await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
+                            return 1;
                         }
-                        else
+                        using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration))
                         {
+                            const int S_OK = 0;
+                            var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
                             switch (result)
                             {
                                 case unchecked((int)0x8007000B):
-                                    Console.WriteLine("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                    await LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
                                     break;
                             }
-                            Console.WriteLine($"Signing failed with error {result:X2}.");
+                            if (result == S_OK)
+                            {
+                                await LoggerServiceLocator.Current.Log("Signing completed successfully.");
+                            }
+                            else
+                            {
+                                await LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
+                            }
+                            return result;
                         }
-                        return result;
                     }
                 });
             });
@@ -115,7 +124,7 @@ namespace AzureSignTool
             }
         }
 
-        private static bool CheckMutuallyExclusive(params CommandOption[] commands)
+        private static async Task<bool> CheckMutuallyExclusive(params CommandOption[] commands)
         {
             if (commands.Length < 2)
             {
@@ -124,18 +133,18 @@ namespace AzureSignTool
             var set = new HashSet<string>(commands.Where(c => c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 1)
             {
-                Console.WriteLine($"Cannot use {String.Join(", ", set)} options together.");
+                await LoggerServiceLocator.Current.Log($"Cannot use {String.Join(", ", set)} options together.");
                 return false;
             }
             return true;
         }
 
-        private static bool CheckRequired(params CommandOption[] commands)
+        private static async Task<bool> CheckRequired(params CommandOption[] commands)
         {
             var set = new HashSet<string>(commands.Where(c => !c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 0)
             {
-                Console.WriteLine($"Options {String.Join(", ", set)} are required.");
+                await LoggerServiceLocator.Current.Log($"Options {String.Join(", ", set)} are required.");
                 return false;
             }
             return true;

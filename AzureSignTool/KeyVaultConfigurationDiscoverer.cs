@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.KeyVault.Models;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System;
 using System.Net.Http;
@@ -11,6 +12,7 @@ namespace AzureSignTool
     {
         public static async Task<AzureKeyVaultMaterializedConfiguration> Materialize(AzureKeyVaultSignConfigurationSet configuration)
         {
+            var authenticationFailure = false;
             async Task<string> Authenticate(string authority, string resource, string scope)
             {
                 if (!string.IsNullOrWhiteSpace(configuration.AzureAccessToken))
@@ -21,20 +23,54 @@ namespace AzureSignTool
                 var context = new AuthenticationContext(authority);
                 ClientCredential credential = new ClientCredential(configuration.AzureClientId, configuration.AzureClientSecret);
 
-                AuthenticationResult result = await context.AcquireTokenAsync(resource, credential);
-                if (result == null)
+                try
                 {
-                    throw new InvalidOperationException("Authentication to Azure failed.");
+                    AuthenticationResult result = await context.AcquireTokenAsync(resource, credential);
+                    return result.AccessToken;
                 }
-                return result.AccessToken;
+                catch (AdalServiceException e) when (e.StatusCode >= 400 && e.StatusCode < 500)
+                {
+                    authenticationFailure = true;
+                    await LoggerServiceLocator.Current.Log("Failed to authenticate to Azure Key Vault. Please check credentials.");
+                    return null;
+                }
             }
             var client = new HttpClient();
             var vault = new KeyVaultClient(Authenticate, client);
-            var azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
-            var x509Certificate = new X509Certificate2(azureCertificate.Cer);
+            
+            X509Certificate2 certificate;
+            CertificateBundle azureCertificate;
+            try
+            {
+                await LoggerServiceLocator.Current.Log($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.", LogLevel.Verbose);
+                azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
+                certificate = new X509Certificate2(azureCertificate.Cer);
+            }
+            catch
+            {
+                if (!authenticationFailure)
+                {
+                    await LoggerServiceLocator.Current.Log($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
+                }
+                return null;
+            }
             var keyId = azureCertificate.KeyIdentifier;
-            var key = await vault.GetKeyAsync(keyId.Identifier);
-            return new AzureKeyVaultMaterializedConfiguration(vault, x509Certificate, key, configuration.FileDigestAlgorithm);
+            KeyBundle key;
+            try
+            {
+                await LoggerServiceLocator.Current.Log($"Retrieving key {keyId.Identifier}.", LogLevel.Verbose);
+                key = await vault.GetKeyAsync(keyId.Identifier);
+            }
+            catch
+            {
+                if (!authenticationFailure)
+                {
+                    await LoggerServiceLocator.Current.Log($"Failed to retrieve key {keyId.Identifier} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
+                }
+                return null;
+            }
+            return new AzureKeyVaultMaterializedConfiguration(vault, certificate, key, configuration.FileDigestAlgorithm);
+
         }
     }
 }
