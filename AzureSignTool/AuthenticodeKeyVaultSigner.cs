@@ -13,12 +13,13 @@ namespace AzureSignTool
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
 
-        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration)
+        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates)
         {
             _timeStampConfiguration = timeStampConfiguration;
             _configuration = configuration;
             _certificateStore = MemoryCertificateStore.Create();
             _chain = new X509Chain();
+            _chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
             //We don't care about the trustworthiness of the cert. We just want a chain to sign with.
             _chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
             if (!_chain.Build(_configuration.PublicCertificate))

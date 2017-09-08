@@ -70,6 +70,13 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 	* sha256
 	* sha384
 	* sha512
+	
+* `--additional-certificates` [short: `-ac`, required: no]: A list of paths to additional certificates to aide in building a full chain
+	for the signing certificate. Azure SignTool will build a chain, either as deep as it can or to a trusted root. This will also use
+	the Windows certificate store, in addition to any certificates specified with this option. Specifying this option does not guarantee
+	the inclusion of the certificate, only if it is part of the chain. To include multiple certificates, specify this option mulitple
+	times, such as `-ac file1.cer -ac file2.cer`. The files specified must be public certificates only. They cannot be PFX, PKCS12 or
+	PFX files.
 
 ## Supported Formats
 

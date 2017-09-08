@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace AzureSignTool
@@ -28,14 +30,29 @@ namespace AzureSignTool
                 var rfc3161TimeStamp = cfg.Option("-tr | --timestamp-rfc3161", "Specifies the RFC 3161 timestamp server's URL. If this option (or -t) is not specified, the signed file will not be timestamped.", CommandOptionType.SingleValue);
                 var rfc3161Digest = cfg.Option("-td | --timestamp-digest", "Used with the -tr switch to request a digest algorithm used by the RFC 3161 timestamp server.", CommandOptionType.SingleValue);
                 var acTimeStamp = cfg.Option("-t | --timestamp-authenticode", "Specify the timestamp server's URL. If this option is not present, the signed file will not be timestamped.", CommandOptionType.SingleValue);
+                var additionalCertificates = cfg.Option("-ac | --additional-certificates", "Specify one or more certificates to include in the public certificate chain.", CommandOptionType.MultipleValue);
 
                 var file = cfg.Argument("file", "The path to the file.");
                 cfg.HelpOption("-? | -h | --help");
 
                 cfg.OnExecute(async () =>
                 {
+                    X509Certificate2Collection certificates;
+                    switch (GetAdditionalCertificates(additionalCertificates.Values))
+                    {
+                        case ErrorOr<X509Certificate2Collection>.Ok d:
+                            certificates = d.Value;
+                            break;
+                        case ErrorOr<X509Certificate2Collection>.Err err:
+                            await LoggerServiceLocator.Current.Log(err.Error.Message);
+                            return 1;
+                        default:
+                            await LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
+                            return 1;
+                    }
+
                     if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
-                        ! await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
+                        !await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
                     {
                         return 1;
                     }
@@ -67,6 +84,8 @@ namespace AzureSignTool
                         DigestAlgorithm = GetValueFromOption(rfc3161Digest, AlgorithmFromInput, HashAlgorithmName.SHA256)
                     };
 
+
+
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     {
                         if (materialized == null)
@@ -74,7 +93,7 @@ namespace AzureSignTool
                             await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
                             return 1;
                         }
-                        using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration))
+                        using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                         {
                             const int S_OK = 0;
                             var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
@@ -124,6 +143,35 @@ namespace AzureSignTool
             }
         }
 
+        private static ErrorOr<X509Certificate2Collection> GetAdditionalCertificates(IEnumerable<string> paths)
+        {
+            var collection = new X509Certificate2Collection();
+            try
+            {
+                foreach (var path in paths)
+                {
+
+                    var type = X509Certificate2.GetCertContentType(path);
+                    switch (type)
+                    {
+                        case X509ContentType.Cert:
+                        case X509ContentType.Authenticode:
+                        case X509ContentType.SerializedCert:
+                            collection.Add(new X509Certificate2(path));
+                            break;
+                        default:
+                            return new Exception($"Specified file {path} is not a public valid certificate.");
+                    }
+                }
+            }
+            catch (CryptographicException e)
+            {
+                return e;
+            }
+
+            return collection;
+        }
+
         private static async Task<bool> CheckMutuallyExclusive(params CommandOption[] commands)
         {
             if (commands.Length < 2)
@@ -150,7 +198,7 @@ namespace AzureSignTool
             return true;
         }
 
-        private static T GetValueFromOption<T>(CommandOption option, Func<string, T> transform, T defaultIfNull) where T:class
+        private static T GetValueFromOption<T>(CommandOption option, Func<string, T> transform, T defaultIfNull) where T : class
         {
             if (!option.HasValue())
             {
@@ -159,7 +207,7 @@ namespace AzureSignTool
             return transform(option.Value()) ?? defaultIfNull;
         }
 
-        private static T GetValueFromOption<T>(CommandOption option, Func<string, T?> transform, T defaultIfNull) where T:struct
+        private static T GetValueFromOption<T>(CommandOption option, Func<string, T?> transform, T defaultIfNull) where T : struct
         {
             if (!option.HasValue())
             {
