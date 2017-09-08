@@ -116,7 +116,7 @@ namespace AzureSignTool.Interop
         SPC_INC_PE_DEBUG_INFO_FLAG = 0x040,
         SPC_INC_PE_RESOURCES_FLAG = 0x080,
         SPC_INC_PE_PAGE_HASHES_FLAG = 0x100,
-        UNDOCUMENTED = 0X400,
+        SIGN_CALLBACK_UNDOCUMENTED = 0X400,
         SIG_APPEND = 0x1000
     }
 

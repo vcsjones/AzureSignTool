@@ -3,32 +3,20 @@ using System.Runtime.InteropServices;
 
 namespace AzureSignTool
 {
-    // This acts as an "out" handler that works on structure fields.
-    public class StructureOutManager<T> : PrimitiveStructureOutManager where T:struct
+    public sealed class PrimitiveStructureOutManager : IDisposable
     {
+        private readonly Action<IntPtr> _cleanup;
+        private IntPtr ptr;
 
-        public T? Value
+        private PrimitiveStructureOutManager(Action<IntPtr> cleanup)
         {
-            get
-            {
-                if (!Object.HasValue)
-                {
-                    return null;
-                }
-                return Marshal.PtrToStructure<T>(Object.Value);
-            }
-        }
-    }
-
-    public class PrimitiveStructureOutManager : IDisposable
-    {
-        protected IntPtr ptr;
-
-        public PrimitiveStructureOutManager()
-        {
+            _cleanup = cleanup;
             ptr = Marshal.AllocHGlobal(Marshal.SizeOf<IntPtr>());
             Marshal.WriteIntPtr(ptr, IntPtr.Zero);
         }
+
+        public static PrimitiveStructureOutManager Create<T>(Func<IntPtr, T> cleanup) => new PrimitiveStructureOutManager(i => cleanup(i));
+        public static PrimitiveStructureOutManager Create() => new PrimitiveStructureOutManager(null);
 
         public IntPtr Handle => ptr;
         public IntPtr? Object
@@ -50,6 +38,10 @@ namespace AzureSignTool
 
         public void Dispose()
         {
+            if (Object.HasValue && _cleanup != null)
+            {
+                _cleanup(Object.Value);
+            }
             Marshal.FreeHGlobal(ptr);
             ptr = IntPtr.Zero;
         }
