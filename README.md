@@ -78,6 +78,12 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 	times, such as `-ac file1.cer -ac file2.cer`. The files specified must be public certificates only. They cannot be PFX, PKCS12 or
 	PFX files.
 
+* `--verbose` [short: `-v`, required: no]: Include additional output in the log. This parameter does not accept a value and cannot be
+	combine with the `--quiet` option.
+
+* `--quiet` [short: `-q`, required: no]: Do not print output to the log. This parameter does not accept a value and cannot be
+	combine with the `--verbose` option. The exit code of the process can be used to determine success or failure of the sign operation.
+
 ## Supported Formats
 
 This tool uses the same mechanisms for signing as the Windows SDK `signtool`. It will support the same formats as `signtool` supports.

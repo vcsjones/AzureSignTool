@@ -31,6 +31,8 @@ namespace AzureSignTool
                 var rfc3161Digest = cfg.Option("-td | --timestamp-digest", "Used with the -tr switch to request a digest algorithm used by the RFC 3161 timestamp server.", CommandOptionType.SingleValue);
                 var acTimeStamp = cfg.Option("-t | --timestamp-authenticode", "Specify the timestamp server's URL. If this option is not present, the signed file will not be timestamped.", CommandOptionType.SingleValue);
                 var additionalCertificates = cfg.Option("-ac | --additional-certificates", "Specify one or more certificates to include in the public certificate chain.", CommandOptionType.MultipleValue);
+                var verbose = cfg.Option("-v | --verbose", "Include additional output.", CommandOptionType.NoValue);
+                var quiet = cfg.Option("-q | --quiet", "Do not print any output to the console.", CommandOptionType.NoValue);
 
                 var file = cfg.Argument("file", "The path to the file.");
                 cfg.HelpOption("-? | -h | --help");
@@ -49,6 +51,20 @@ namespace AzureSignTool
                         default:
                             await LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
                             return 1;
+                    }
+
+                    if (!await CheckMutuallyExclusive(quiet, verbose))
+                    {
+                        return 1;
+                    }
+
+                    if (quiet.HasValue())
+                    {
+                        LoggerServiceLocator.Current.Level = LogLevel.Quiet;
+                    }
+                    else if (verbose.HasValue())
+                    {
+                        LoggerServiceLocator.Current.Level = LogLevel.Verbose;
                     }
 
                     if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
