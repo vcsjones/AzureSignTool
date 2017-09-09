@@ -13,8 +13,8 @@ Example usage:
 	  -kvs <token> \
 	  -kvc my-key-name \
 	  -tr http://timestamp.digicert.com \
-	  -td sha384
-	  -v
+	  -td sha384 \
+	  -v \
 	  C:\path\to\program.exe
 	  
 	  
@@ -22,7 +22,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 ## Parameters
 
-* `--azure-key-vault-url` [short: `-kvu`, required: yes]: A fully qualified link to the URL of the key vault with
+* `--azure-key-vault-url` [short: `-kvu`, required: yes]: A fully qualified URL of the key vault with
 	the certificate that will be used for signing. An example value might be `https://my-vault.vault.azure.net`.
 
 * `--azure-key-vault-client-id` [short: `-kvi`, required: possibly]: This is the client ID used to authenticate to

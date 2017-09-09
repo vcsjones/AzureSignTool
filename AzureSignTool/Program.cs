@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+
+using static AzureSignTool.HRESULT;
 
 namespace AzureSignTool
 {
@@ -47,15 +48,15 @@ namespace AzureSignTool
                             break;
                         case ErrorOr<X509Certificate2Collection>.Err err:
                             await LoggerServiceLocator.Current.Log(err.Error.Message);
-                            return 1;
+                            return E_INVALIDARG;
                         default:
                             await LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
-                            return 1;
+                            return E_INVALIDARG;
                     }
 
                     if (!await CheckMutuallyExclusive(quiet, verbose))
                     {
-                        return 1;
+                        return E_INVALIDARG;
                     }
 
                     if (quiet.HasValue())
@@ -70,16 +71,16 @@ namespace AzureSignTool
                     if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
                         !await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
                     {
-                        return 1;
+                        return E_INVALIDARG;
                     }
                     if (!azureKeyVaultAccessToken.HasValue() && !await CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
                     {
-                        return 1;
+                        return E_INVALIDARG;
                     }
                     if (string.IsNullOrWhiteSpace(file.Value))
                     {
                         await LoggerServiceLocator.Current.Log("File is required.");
-                        return 1;
+                        return E_INVALIDARG;
                     }
                     var configuration = new AzureKeyVaultSignConfigurationSet
                     {
@@ -107,15 +108,14 @@ namespace AzureSignTool
                         if (materialized == null)
                         {
                             await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
-                            return 1;
+                            return E_INVALIDARG;
                         }
                         using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                         {
-                            const int S_OK = 0;
                             var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
                             switch (result)
                             {
-                                case unchecked((int)0x8007000B):
+                                case COR_E_BADIMAGEFORMAT:
                                     await LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
                                     break;
                             }
