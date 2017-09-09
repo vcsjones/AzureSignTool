@@ -14,6 +14,7 @@ Example usage:
 	  -kvc my-key-name \
 	  -tr http://timestamp.digicert.com \
 	  -td sha384
+	  -v
 	  C:\path\to\program.exe
 	  
 	  
@@ -77,7 +78,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 	the inclusion of the certificate, only if it is part of the chain. To include multiple certificates, specify this option mulitple
 	times, such as `-ac file1.cer -ac file2.cer`. The files specified must be public certificates only. They cannot be PFX, PKCS12 or
 	PFX files.
-
+	
 * `--verbose` [short: `-v`, required: no]: Include additional output in the log. This parameter does not accept a value and cannot be
 	combine with the `--quiet` option.
 
