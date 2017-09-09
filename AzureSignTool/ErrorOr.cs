@@ -2,7 +2,7 @@
 
 namespace AzureSignTool
 {
-    public class ErrorOr<TValue>
+    public abstract class ErrorOr<TValue>
     {
         private readonly TValue _value;
         private readonly Exception _error;
@@ -11,12 +11,12 @@ namespace AzureSignTool
 
         private ErrorOr(Exception ex) => _error = ex;
 
-        public static implicit operator ErrorOr<TValue>(TValue value) => new ErrorOr<TValue>(value);
-        public static implicit operator ErrorOr<TValue>(Exception ex) => new ErrorOr<TValue>(ex);
+        public static implicit operator ErrorOr<TValue>(TValue value) => new Ok(value);
+        public static implicit operator ErrorOr<TValue>(Exception ex) => new Err(ex);
 
         public class Ok : ErrorOr<TValue>
         {
-            private Ok(TValue value) : base(value)
+            internal Ok(TValue value) : base(value)
             {
             }
 
@@ -25,7 +25,7 @@ namespace AzureSignTool
 
         public class Err : ErrorOr<TValue>
         {
-            private Err(Exception ex) : base(ex)
+            internal Err(Exception ex) : base(ex)
             {
             }
 
