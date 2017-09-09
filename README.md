@@ -90,6 +90,10 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 This tool uses the same mechanisms for signing as the Windows SDK `signtool`. It will support the same formats as `signtool` supports.
 However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Pacakges are
 present on the system.
+
+## Exit Codes
+
+The exit code is an HRESULT. Successfully signing produces a result of `S_OK`, or "0".
 	  
 ## Requirements
 
