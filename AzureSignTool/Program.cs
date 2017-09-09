@@ -41,7 +41,7 @@ namespace AzureSignTool
                 cfg.OnExecute(async () =>
                 {
                     X509Certificate2Collection certificates;
-                    switch (GetAdditionalCertificates(additionalCertificates.Values))
+                    switch (await GetAdditionalCertificates(additionalCertificates.Values))
                     {
                         case ErrorOr<X509Certificate2Collection>.Ok d:
                             certificates = d.Value;
@@ -159,7 +159,7 @@ namespace AzureSignTool
             }
         }
 
-        private static ErrorOr<X509Certificate2Collection> GetAdditionalCertificates(IEnumerable<string> paths)
+        private static async Task<ErrorOr<X509Certificate2Collection>> GetAdditionalCertificates(IEnumerable<string> paths)
         {
             var collection = new X509Certificate2Collection();
             try
@@ -173,7 +173,9 @@ namespace AzureSignTool
                         case X509ContentType.Cert:
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
-                            collection.Add(new X509Certificate2(path));
+                            var certificate = new X509Certificate2(path);
+                            await LoggerServiceLocator.Current.Log($"Including additional certificate {certificate.Thumbprint}.", LogLevel.Verbose);
+                            collection.Add(certificate);
                             break;
                         default:
                             return new Exception($"Specified file {path} is not a public valid certificate.");
@@ -182,6 +184,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
+                await LoggerServiceLocator.Current.Log($"An exception occured while including an additional certificate:\n{e}", LogLevel.Verbose);
                 return e;
             }
 
