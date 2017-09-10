@@ -1,10 +1,7 @@
 ﻿using Microsoft.Azure.KeyVault;
-using System;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-
-
 
 namespace AzureSignTool
 {
@@ -21,14 +18,8 @@ namespace AzureSignTool
         /// </summary>
         public KeyVaultSigningContext(AzureKeyVaultMaterializedConfiguration configuration)
         {
-            ContextCreationTime = DateTimeOffset.Now;
             _configuration = configuration;
         }
-
-        /// <summary>
-        /// Gets the date and time that this context was created.
-        /// </summary>
-        public DateTimeOffset ContextCreationTime { get; }
 
         /// <summary>
         /// Gets the file digest algorithm.
@@ -43,6 +34,7 @@ namespace AzureSignTool
 
         public async Task<byte[]> SignDigestAsync(byte[] digest)
         {
+            await LoggerServiceLocator.Current.Log($"Signing digest with key.", LogLevel.Verbose).ConfigureAwait(false);
             var client = _configuration.Client;
             var algorithm = AlgorithmTranslator.SignatureAlgorithmToJwsAlgId(_configuration.FileDigestAlgorithm);
             var signature = await client.SignAsync(_configuration.Key.KeyIdentifier.Identifier, algorithm, digest).ConfigureAwait(false);
