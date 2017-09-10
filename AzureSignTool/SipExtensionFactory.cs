@@ -89,7 +89,12 @@ namespace AzureSignTool
             _extraHandle.Free();
         }
 
-        public override SignerSignEx3Flags ModifyFlags(SignerSignEx3Flags flags) => flags | SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+        public override SignerSignEx3Flags ModifyFlags(SignerSignEx3Flags flags)
+        {
+            flags &= ~SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
+            flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+            return flags;
+        }
     }
 
     internal class SipExtension : IDisposable

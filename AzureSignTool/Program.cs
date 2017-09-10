@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -34,6 +35,8 @@ namespace AzureSignTool
                 var additionalCertificates = cfg.Option("-ac | --additional-certificates", "Specify one or more certificates to include in the public certificate chain.", CommandOptionType.MultipleValue);
                 var verbose = cfg.Option("-v | --verbose", "Include additional output.", CommandOptionType.NoValue);
                 var quiet = cfg.Option("-q | --quiet", "Do not print any output to the console.", CommandOptionType.NoValue);
+                var pageHashing = cfg.Option("-ph | --page-hashing", "Generate page hashes for executable files if supported.", CommandOptionType.NoValue);
+                var noPageHashing = cfg.Option("-nph | --no-page-hashing", "Suppress page hashes for executable files if supported.", CommandOptionType.NoValue);
 
                 var file = cfg.Argument("file", "The path to the file.");
                 cfg.HelpOption("-? | -h | --help");
@@ -41,7 +44,7 @@ namespace AzureSignTool
                 cfg.OnExecute(async () =>
                 {
                     X509Certificate2Collection certificates;
-                    switch (GetAdditionalCertificates(additionalCertificates.Values))
+                    switch (await GetAdditionalCertificates(additionalCertificates.Values))
                     {
                         case ErrorOr<X509Certificate2Collection>.Ok d:
                             certificates = d.Value;
@@ -69,7 +72,8 @@ namespace AzureSignTool
                     }
 
                     if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
-                        !await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName))
+                        !await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName) |
+                        !await CheckMutuallyExclusive(pageHashing, noPageHashing))
                     {
                         return E_INVALIDARG;
                     }
@@ -81,6 +85,11 @@ namespace AzureSignTool
                     {
                         await LoggerServiceLocator.Current.Log("File is required.");
                         return E_INVALIDARG;
+                    }
+                    if (!File.Exists(file.Value))
+                    {
+                        await LoggerServiceLocator.Current.Log("File does not exist.");
+                        return E_FILE_NOT_FOUND;
                     }
                     var configuration = new AzureKeyVaultSignConfigurationSet
                     {
@@ -101,7 +110,15 @@ namespace AzureSignTool
                         DigestAlgorithm = GetValueFromOption(rfc3161Digest, AlgorithmFromInput, HashAlgorithmName.SHA256)
                     };
 
-
+                    bool? performPageHashing = null;
+                    if (pageHashing.HasValue())
+                    {
+                        performPageHashing = true;
+                    }
+                    if (noPageHashing.HasValue())
+                    {
+                        performPageHashing = false;
+                    }
 
                     using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
                     {
@@ -112,7 +129,7 @@ namespace AzureSignTool
                         }
                         using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                         {
-                            var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value());
+                            var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
@@ -159,7 +176,7 @@ namespace AzureSignTool
             }
         }
 
-        private static ErrorOr<X509Certificate2Collection> GetAdditionalCertificates(IEnumerable<string> paths)
+        private static async Task<ErrorOr<X509Certificate2Collection>> GetAdditionalCertificates(IEnumerable<string> paths)
         {
             var collection = new X509Certificate2Collection();
             try
@@ -173,7 +190,9 @@ namespace AzureSignTool
                         case X509ContentType.Cert:
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
-                            collection.Add(new X509Certificate2(path));
+                            var certificate = new X509Certificate2(path);
+                            await LoggerServiceLocator.Current.Log($"Including additional certificate {certificate.Thumbprint}.", LogLevel.Verbose);
+                            collection.Add(certificate);
                             break;
                         default:
                             return new Exception($"Specified file {path} is not a public valid certificate.");
@@ -182,6 +201,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
+                await LoggerServiceLocator.Current.Log($"An exception occured while including an additional certificate:\n{e}", LogLevel.Verbose);
                 return e;
             }
 

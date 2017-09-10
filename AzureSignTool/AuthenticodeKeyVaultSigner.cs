@@ -32,9 +32,17 @@ namespace AzureSignTool
             }
         }
 
-        public int SignFile(string path, string description, string descriptionUrl)
+        public int SignFile(string path, string description, string descriptionUrl, bool? pageHashing)
         {
             var flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
+            if (pageHashing == true)
+            {
+                flags |= SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
+            }
+            else if (pageHashing == false)
+            {
+                flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+            }
 
             using (var contextReceiver = PrimitiveStructureOutManager.Create(mssign32.SignerFreeSignerContext))
             using (var sipState = PrimitiveStructureOutManager.Create())
