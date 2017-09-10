@@ -10,7 +10,7 @@ namespace AzureSignTool
 {
     internal static class KeyVaultConfigurationDiscoverer
     {
-        public static async Task<AzureKeyVaultMaterializedConfiguration> Materialize(AzureKeyVaultSignConfigurationSet configuration)
+        public static async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
         {
             var authenticationFailure = false;
             async Task<string> Authenticate(string authority, string resource, string scope)
@@ -46,13 +46,13 @@ namespace AzureSignTool
                 azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
-            catch
+            catch (Exception e)
             {
                 if (!authenticationFailure)
                 {
                     await LoggerServiceLocator.Current.Log($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
                 }
-                return null;
+                return e;
             }
             var keyId = azureCertificate.KeyIdentifier;
             KeyBundle key;
@@ -61,13 +61,13 @@ namespace AzureSignTool
                 await LoggerServiceLocator.Current.Log($"Retrieving key {keyId.Identifier}.", LogLevel.Verbose);
                 key = await vault.GetKeyAsync(keyId.Identifier);
             }
-            catch
+            catch (Exception e)
             {
                 if (!authenticationFailure)
                 {
                     await LoggerServiceLocator.Current.Log($"Failed to retrieve key {keyId.Identifier} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
                 }
-                return null;
+                return e;
             }
             return new AzureKeyVaultMaterializedConfiguration(vault, certificate, key, configuration.FileDigestAlgorithm);
 

@@ -120,32 +120,36 @@ namespace AzureSignTool
                         performPageHashing = false;
                     }
 
-                    using (var materialized = await KeyVaultConfigurationDiscoverer.Materialize(configuration))
+                    var materializedResult = await KeyVaultConfigurationDiscoverer.Materialize(configuration);
+                    AzureKeyVaultMaterializedConfiguration materialized;
+                    switch (materializedResult)
                     {
-                        if (materialized == null)
-                        {
+                        case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Ok ok:
+                            materialized = ok.Value;
+                            break;
+                        default:
                             await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
-                        }
-                        using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
+                    }
+                    using (materialized)
+                    using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
+                    {
+                        var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
+                        switch (result)
                         {
-                            var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
-                            switch (result)
-                            {
-                                case COR_E_BADIMAGEFORMAT:
-                                    await LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
-                                    break;
-                            }
-                            if (result == S_OK)
-                            {
-                                await LoggerServiceLocator.Current.Log("Signing completed successfully.");
-                            }
-                            else
-                            {
-                                await LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
-                            }
-                            return result;
+                            case COR_E_BADIMAGEFORMAT:
+                                await LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                break;
                         }
+                        if (result == S_OK)
+                        {
+                            await LoggerServiceLocator.Current.Log("Signing completed successfully.");
+                        }
+                        else
+                        {
+                            await LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
+                        }
+                        return result;
                     }
                 });
             });
