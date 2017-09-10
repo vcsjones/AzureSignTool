@@ -84,6 +84,18 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 * `--quiet` [short: `-q`, required: no]: Do not print output to the log. This parameter does not accept a value and cannot be
 	combine with the `--verbose` option. The exit code of the process can be used to determine success or failure of the sign operation.
+	
+### Advanced
+
+* `--page-hashing` [short: `-ph`, required: no]: Causes the Authenticode signing process to generate hashes of pages for verifying when
+	the application is paged in to memory. If this flag is omitted, the default configuration for the operating system will be used.
+	This flag will not affect non-PE file formats.
+	
+* `---no-page-hashing` [short: `-nph`, required: no]: Causes the Authenticode signing process to exclude hashes of pages for verifying when
+	the application is paged in to memory. If this flag is omitted, the default configuration for the operating system will be used.
+	This flag will not affect non-PE file formats.
+
+In most circumances, using the defaults for page hashing is recommended, which can be done by simply omitting both of the parameters.
 
 ## Supported Formats
 
