@@ -8,7 +8,7 @@ namespace AzureSignTool
         static NativeConstants()
         {
             //This memory is intended to live for the duration of the process. Don't free it.
-            ZeroDWORD = Marshal.AllocHGlobal(Marshal.SizeOf<uint>());
+            ZeroDWORD = Marshal2.AllocHGlobal<uint>();
             Marshal.WriteInt32(ZeroDWORD, 0);
         }
 

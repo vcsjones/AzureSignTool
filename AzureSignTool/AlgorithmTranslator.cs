@@ -5,7 +5,7 @@ namespace AzureSignTool
 {
     internal static class AlgorithmTranslator
     {
-        public static string SignatureAlgorithmToJwsAlgId(HashAlgorithmName hashAlgorithmName)
+        public static string SignatureAlgorithmToRsaJwsAlgId(HashAlgorithmName hashAlgorithmName)
         {
                 if (hashAlgorithmName.Name == HashAlgorithmName.SHA256.Name)
                     return "RS256";

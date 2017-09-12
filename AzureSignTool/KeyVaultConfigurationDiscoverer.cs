@@ -25,7 +25,7 @@ namespace AzureSignTool
 
                 try
                 {
-                    AuthenticationResult result = await context.AcquireTokenAsync(resource, credential);
+                    var result = await context.AcquireTokenAsync(resource, credential);
                     return result.AccessToken;
                 }
                 catch (AdalServiceException e) when (e.StatusCode >= 400 && e.StatusCode < 500)

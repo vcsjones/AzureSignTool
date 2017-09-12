@@ -6,28 +6,28 @@ namespace AzureSignTool
     public sealed class PrimitiveStructureOutManager : IDisposable
     {
         private readonly Action<IntPtr> _cleanup;
-        private IntPtr ptr;
+        private IntPtr _ptr;
 
         private PrimitiveStructureOutManager(Action<IntPtr> cleanup)
         {
             _cleanup = cleanup;
-            ptr = Marshal.AllocHGlobal(Marshal.SizeOf<IntPtr>());
-            Marshal.WriteIntPtr(ptr, IntPtr.Zero);
+            _ptr = Marshal.AllocHGlobal(Marshal.SizeOf<IntPtr>());
+            Marshal.WriteIntPtr(_ptr, IntPtr.Zero);
         }
 
         public static PrimitiveStructureOutManager Create<T>(Func<IntPtr, T> cleanup) => new PrimitiveStructureOutManager(i => cleanup(i));
         public static PrimitiveStructureOutManager Create() => new PrimitiveStructureOutManager(null);
 
-        public IntPtr Handle => ptr;
+        public IntPtr Handle => _ptr;
         public IntPtr? Object
         {
             get
             {
-                if (ptr == IntPtr.Zero)
+                if (_ptr == IntPtr.Zero)
                 {
                     return null;
                 }
-                var contents = Marshal.ReadIntPtr(ptr);
+                var contents = Marshal.ReadIntPtr(_ptr);
                 if (contents == IntPtr.Zero)
                 {
                     return null;
@@ -42,8 +42,8 @@ namespace AzureSignTool
             {
                 _cleanup(Object.Value);
             }
-            Marshal.FreeHGlobal(ptr);
-            ptr = IntPtr.Zero;
+            Marshal.FreeHGlobal(_ptr);
+            _ptr = IntPtr.Zero;
         }
     }
 }

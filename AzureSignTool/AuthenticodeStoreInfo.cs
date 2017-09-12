@@ -5,9 +5,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace AzureSignTool
 {
-    public class AuthenticodeSignerCertStoreInfo : IDisposable
+    public sealed class AuthenticodeSignerCertStoreInfo : IDisposable
     {
-        private readonly GCHandle _handle;
+        private IntPtr _handle;
 
         public AuthenticodeSignerCertStoreInfo(MemoryCertificateStore store, X509Certificate2 certificate)
         {
@@ -16,15 +16,23 @@ namespace AzureSignTool
                 hCertStore: store.Handle,
                 pSigningCert: certificate.Handle
             );
-            _handle = GCHandle.Alloc(storeInfo, GCHandleType.Pinned);
+            _handle = Marshal2.AllocHGlobal<SIGNER_CERT_STORE_INFO>();
+            Marshal.StructureToPtr(storeInfo, _handle, false);
         }
 
-        public IntPtr Handle => _handle.AddrOfPinnedObject();
+        public IntPtr Handle => _handle;
 
+        public void Dispose() => Dispose(true);
+        ~AuthenticodeSignerCertStoreInfo() => Dispose(false);
 
-        public void Dispose()
+        private void Dispose(bool disposing)
         {
-            _handle.Free();
+            if (_handle != IntPtr.Zero)
+            {
+                Marshal.DestroyStructure<SIGNER_CERT_STORE_INFO>(_handle);
+                Marshal.FreeHGlobal(_handle);
+            }
+            _handle = IntPtr.Zero;
         }
     }
 }

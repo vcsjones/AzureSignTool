@@ -38,8 +38,8 @@ namespace AzureSignTool
 
     internal class AppxSipExtension : SipExtension
     {
-        private readonly GCHandle _paramsHandle;
-        private readonly GCHandle _extraHandle;
+        private IntPtr _paramsHandle;
+        private IntPtr _extraHandle;
 
         public AppxSipExtension(SignerSignEx3Flags flags,
             PrimitiveStructureOutManager contextReceiver,
@@ -71,22 +71,26 @@ namespace AzureSignTool
                 pSignCallBack = SignInfoHandle
             };
 
-            _paramsHandle = GCHandle.Alloc(paramsStructure, GCHandleType.Pinned);
+
+            _paramsHandle = Marshal2.AllocHGlobal<SIGNER_SIGN_EX3_PARAMS>();
+            Marshal.StructureToPtr(paramsStructure, _paramsHandle, false);
 
             var extraStructure = new APPX_SIP_CLIENT_DATA
             {
-                pSignerParams = _paramsHandle.AddrOfPinnedObject()
+                pSignerParams = _paramsHandle
             };
 
-            _extraHandle = GCHandle.Alloc(extraStructure, GCHandleType.Pinned);
-            SipDataHandle = _extraHandle.AddrOfPinnedObject();
+            _extraHandle = Marshal2.AllocHGlobal<APPX_SIP_CLIENT_DATA>();
+            Marshal.StructureToPtr(extraStructure, _extraHandle, false);
+
+            SipDataHandle = _extraHandle;
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            _paramsHandle.Free();
-            _extraHandle.Free();
+            Marshal2.DestroyAndFreeHGlobal<SIGNER_SIGN_EX3_PARAMS>(ref _paramsHandle);
+            Marshal2.DestroyAndFreeHGlobal<APPX_SIP_CLIENT_DATA>(ref _extraHandle);
         }
 
         public override SignerSignEx3Flags ModifyFlags(SignerSignEx3Flags flags)
@@ -103,18 +107,15 @@ namespace AzureSignTool
 
         public virtual SignerSignEx3Flags ModifyFlags(SignerSignEx3Flags flags) => flags;
 
-        public IntPtr TimestampUrlHandle { get; }
-        public IntPtr TimestampAlgorithmOidHandle { get; }
+        public IntPtr TimestampUrlHandle { get; private set; }
+        public IntPtr TimestampAlgorithmOidHandle { get; private set; }
 
-        private readonly GCHandle _signInfoHandle;
-        private readonly GCHandle _signatureInfoHandle;
-        private readonly GCHandle _signerCertHandle;
-        private readonly GCHandle _subjectInfoHandle;
+        private IntPtr _signInfoHandle, _signatureInfoHandle, _subjectInfoHandle, _signerCertHandle;
 
-        public IntPtr SignInfoHandle => _signInfoHandle.AddrOfPinnedObject();
-        public IntPtr SignatureInfoHandle => _signatureInfoHandle.AddrOfPinnedObject();
-        public IntPtr SubjectInfoHandle => _subjectInfoHandle.AddrOfPinnedObject();
-        public IntPtr SignerCertHandle => _signerCertHandle.AddrOfPinnedObject();
+        public ref IntPtr SignInfoHandle => ref _signInfoHandle;
+        public ref IntPtr SignatureInfoHandle => ref _signatureInfoHandle;
+        public ref IntPtr SubjectInfoHandle => ref _subjectInfoHandle;
+        public ref IntPtr SignerCertHandle => ref _signerCertHandle;
 
 
         public SipExtension(
@@ -158,20 +159,27 @@ namespace AzureSignTool
                     pAttrAuthcode = attributes.Handle
                 }
             );
-            _signInfoHandle = GCHandle.Alloc(signInfo, GCHandleType.Pinned);
-            _signatureInfoHandle = GCHandle.Alloc(signatureInfo, GCHandleType.Pinned);
-            _signerCertHandle = GCHandle.Alloc(signerCert, GCHandleType.Pinned);
-            _subjectInfoHandle = GCHandle.Alloc(subject, GCHandleType.Pinned);
+            SignInfoHandle = Marshal2.AllocHGlobal<SIGN_INFO>();
+            Marshal.StructureToPtr(signInfo, SignInfoHandle, false);
+
+            SignatureInfoHandle = Marshal2.AllocHGlobal<SIGNER_SIGNATURE_INFO>();
+            Marshal.StructureToPtr(signatureInfo, SignatureInfoHandle, false);
+
+            SignerCertHandle = Marshal2.AllocHGlobal<SIGNER_CERT>();
+            Marshal.StructureToPtr(signerCert, SignerCertHandle, false);
+
+            SubjectInfoHandle = Marshal2.AllocHGlobal<SIGNER_SUBJECT_INFO>();
+            Marshal.StructureToPtr(subject, SubjectInfoHandle, false);
         }
 
         public virtual void Dispose()
         {
             Marshal.FreeHGlobal(TimestampUrlHandle);
             Marshal.FreeHGlobal(TimestampAlgorithmOidHandle);
-            _signInfoHandle.Free();
-            _signatureInfoHandle.Free();
-            _signerCertHandle.Free();
-            _subjectInfoHandle.Free();
+            Marshal2.DestroyAndFreeHGlobal<SIGN_INFO>(ref SignInfoHandle);
+            Marshal2.DestroyAndFreeHGlobal<SIGNER_SIGNATURE_INFO>(ref SignatureInfoHandle);
+            Marshal2.DestroyAndFreeHGlobal<SIGNER_CERT>(ref SignerCertHandle);
+            Marshal2.DestroyAndFreeHGlobal<SIGNER_SUBJECT_INFO>(ref SubjectInfoHandle);
         }
     }
 }

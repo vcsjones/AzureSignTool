@@ -45,6 +45,7 @@ namespace AzureSignTool
         public IntPtr Handle => _store.StoreHandle;
         public void Add(X509Certificate2 certificate) => _store.Add(certificate);
         public void Add(X509Certificate2Collection collection) => _store.AddRange(collection);
+        public X509Certificate2Collection Certificates => _store.Certificates;
 
         private void Dispose(bool disposing)
         {

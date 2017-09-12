@@ -7,7 +7,7 @@ namespace AzureSignTool
     public class AuthenticodeSignerFile : IDisposable
     {
         private IntPtr _filePathPtr;
-        private GCHandle _handle;
+        private IntPtr _handle;
 
         public AuthenticodeSignerFile(string filePath)
         {
@@ -16,15 +16,28 @@ namespace AzureSignTool
                 pwszFileName: _filePathPtr,
                 hFile: default
            );
-            _handle = GCHandle.Alloc(signerFileInfo, GCHandleType.Pinned);
+            _handle = Marshal2.AllocHGlobal<SIGNER_FILE_INFO>();
+            Marshal.StructureToPtr(signerFileInfo, _handle, false);
         }
 
-        public IntPtr Handle => _handle.AddrOfPinnedObject();
+        public IntPtr Handle => _handle;
 
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+        ~AuthenticodeSignerFile() => Dispose(false);
+
+        private void Dispose(bool disposing)
         {
-            _handle.Free();
-            Marshal.FreeHGlobal(_filePathPtr);
+            if (_handle != IntPtr.Zero)
+            {
+                Marshal.DestroyStructure<SIGNER_FILE_INFO>(_handle);
+                Marshal.FreeHGlobal(_handle);
+                _handle = IntPtr.Zero;
+            }
+            if (_filePathPtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(_filePathPtr);
+                _filePathPtr = IntPtr.Zero;
+            }
         }
     }
 }
