@@ -16,7 +16,7 @@ namespace AzureSignTool
         {
             if (level <= Level)
             {
-                Console.WriteLine(message);
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
             }
             return Task.CompletedTask;
         }

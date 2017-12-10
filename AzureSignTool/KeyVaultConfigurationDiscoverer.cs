@@ -44,6 +44,7 @@ namespace AzureSignTool
             {
                 await LoggerServiceLocator.Current.Log($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.", LogLevel.Verbose);
                 azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
+                await LoggerServiceLocator.Current.Log($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.", LogLevel.Verbose);
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
             catch (Exception e)
@@ -60,6 +61,7 @@ namespace AzureSignTool
             {
                 await LoggerServiceLocator.Current.Log($"Retrieving key {keyId.Identifier}.", LogLevel.Verbose);
                 key = await vault.GetKeyAsync(keyId.Identifier);
+                await LoggerServiceLocator.Current.Log($"Retrieved key {keyId.Identifier}.", LogLevel.Verbose);
             }
             catch (Exception e)
             {

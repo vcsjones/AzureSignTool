@@ -131,9 +131,12 @@ namespace AzureSignTool
                             await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
                     }
+
+                    await LoggerServiceLocator.Current.Log($"Creating Signer & building chain", LogLevel.Verbose);
                     using (materialized)
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                     {
+                        await LoggerServiceLocator.Current.Log($"Signing file {file.Value}", LogLevel.Verbose);
                         var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
                         switch (result)
                         {
