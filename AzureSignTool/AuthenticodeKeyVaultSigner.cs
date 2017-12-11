@@ -1,6 +1,5 @@
 ﻿using AzureSignTool.Interop;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -74,11 +73,11 @@ namespace AzureSignTool
                         break;
                 }
 
-                LoggerServiceLocator.Current.Log("Getting SIP Data", LogLevel.Verbose).Wait();
+                LoggerServiceLocator.Current.Log("Getting SIP Data", LogLevel.Verbose);
                 using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl,
                     timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
                 {
-                    LoggerServiceLocator.Current.Log("Calling SignerSignEx3", LogLevel.Verbose).Wait();
+                    LoggerServiceLocator.Current.Log("Calling SignerSignEx3", LogLevel.Verbose);
                     return mssign32.SignerSignEx3
                     (
                         data.ModifyFlags(flags),
@@ -116,7 +115,7 @@ namespace AzureSignTool
             out CRYPTOAPI_BLOB blob
         )
         {
-            LoggerServiceLocator.Current.Log("SignCallback", LogLevel.Verbose).Wait();
+            LoggerServiceLocator.Current.Log("SignCallback", LogLevel.Verbose);
             var context = new KeyVaultSigningContext(_configuration);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
             var resultPtr = Marshal.AllocHGlobal(result.Length);

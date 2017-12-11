@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace AzureSignTool
 {
@@ -12,13 +11,12 @@ namespace AzureSignTool
         {
         }
 
-        public Task Log(string message, LogLevel level)
+        public void Log(string message, LogLevel level)
         {
             if (level <= Level)
             {
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
             }
-            return Task.CompletedTask;
         }
     }
 
@@ -30,7 +28,9 @@ namespace AzureSignTool
         {
         }
 
-        public Task Log(string message, LogLevel level) => Task.CompletedTask;
+        public void Log(string message, LogLevel level)
+        {
+        }
     }
 
 
@@ -52,7 +52,7 @@ namespace AzureSignTool
     public interface ILogger : IDisposable
     {
         LogLevel Level { get; set; }
-        Task Log(string message, LogLevel level = LogLevel.Normal);
+        void Log(string message, LogLevel level = LogLevel.Normal);
 
     }
 
