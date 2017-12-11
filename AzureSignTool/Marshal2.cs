@@ -13,8 +13,8 @@ namespace AzureSignTool
             var cleanupPtr = Interlocked.Exchange(ref ptr, IntPtr.Zero);
             if (cleanupPtr != IntPtr.Zero)
             {
-                Marshal.DestroyStructure<TStructure>(ptr);
-                Marshal.FreeHGlobal(ptr);
+                Marshal.DestroyStructure<TStructure>(cleanupPtr);
+                Marshal.FreeHGlobal(cleanupPtr);
             }
         }
     }

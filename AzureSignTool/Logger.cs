@@ -7,6 +7,8 @@ namespace AzureSignTool
     {
         public LogLevel Level { get; set; } = LogLevel.Normal;
         private static object _sync = new object();
+        private static int _nextOperationId = 0;
+        private readonly ThreadLocal<int> _operationId = new ThreadLocal<int>(() => Interlocked.Increment(ref _nextOperationId));
 
         public void Dispose()
         {
@@ -18,7 +20,7 @@ namespace AzureSignTool
             {
                 lock (_sync)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}][{_operationId.Value}] {message}");
                 }
             }
         }
