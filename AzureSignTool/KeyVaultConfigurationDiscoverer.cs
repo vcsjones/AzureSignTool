@@ -25,7 +25,9 @@ namespace AzureSignTool
 
                 try
                 {
+                    await LoggerServiceLocator.Current.Log("Acquiring access token from client id", LogLevel.Verbose);
                     var result = await context.AcquireTokenAsync(resource, credential);
+                    await LoggerServiceLocator.Current.Log("Acquired access token from client id", LogLevel.Verbose);
                     return result.AccessToken;
                 }
                 catch (AdalServiceException e) when (e.StatusCode >= 400 && e.StatusCode < 500)
@@ -35,8 +37,8 @@ namespace AzureSignTool
                     return null;
                 }
             }
-            var client = new HttpClient();
-            var vault = new KeyVaultClient(Authenticate, client);
+
+            var vault = new KeyVaultClient(Authenticate);
             
             X509Certificate2 certificate;
             CertificateBundle azureCertificate;
@@ -45,6 +47,7 @@ namespace AzureSignTool
                 await LoggerServiceLocator.Current.Log($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.", LogLevel.Verbose);
                 azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
                 await LoggerServiceLocator.Current.Log($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.", LogLevel.Verbose);
+                
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
             catch (Exception e)
