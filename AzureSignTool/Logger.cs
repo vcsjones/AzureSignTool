@@ -6,6 +6,7 @@ namespace AzureSignTool
     public sealed class ConsoleLogger : ILogger
     {
         public LogLevel Level { get; set; } = LogLevel.Normal;
+        private static object _sync = new object();
 
         public void Dispose()
         {
@@ -15,7 +16,10 @@ namespace AzureSignTool
         {
             if (level <= Level)
             {
-                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+                lock (_sync)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+                }
             }
         }
     }

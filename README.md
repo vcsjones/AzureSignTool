@@ -104,6 +104,11 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `---no-page-hashing` [short: `-nph`, required: no]: Causes the Authenticode signing process to exclude hashes of pages for verifying when
 	the application is paged in to memory. If this flag is omitted, the default configuration for the operating system will be used.
 	This flag will not affect non-PE file formats.
+	
+* `--max-degree-of-parallelism` [short: `-mdop`, required: no]: When signing multiple files, specifies the maximum number of concurrent
+	operations. Setting this value does not guarentee that number of concurrent operations will be performed. If this value is unspecified,
+	the system will use the default based on the number of available processor threads. Setting this value to "1" disable concurrent
+	signing.
 
 In most circumances, using the defaults for page hashing is recommended, which can be done by simply omitting both of the parameters.
 
@@ -119,6 +124,11 @@ The exit code is an HRESULT. Successfully signing produces a result of `S_OK` ("
 more than one file is specified for signing, the exit code will be 0x20000001 if some files were signed successfully. If all files failed
 to sign, the exit code will be 0xA0000002. If only one file is signed or `--continue-on-error` is not specified, the exit code will be
 the HRESULT from `SignerSignEx3` of the file that failed to sign correctly.
+
+## Cancellation
+
+The standard Ctrl+C key sequence is used to cancel the signing. Any in-flight signing operations are finished, then the process exits with
+a status code according to the complete signing operations.
 	  
 ## Requirements
 

@@ -5,7 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading;
+using System.Threading.Tasks;
 using static AzureSignTool.HRESULT;
 
 namespace AzureSignTool
@@ -38,6 +39,7 @@ namespace AzureSignTool
                 var noPageHashing = cfg.Option("-nph | --no-page-hashing", "Suppress page hashes for executable files if supported.", CommandOptionType.NoValue);
                 var continueOnError = cfg.Option("-coe | --continue-on-error", "Continue signing multiple files if an error occurs.", CommandOptionType.NoValue);
                 var inputFileList = cfg.Option("-ifl | --input-file-list", "A path to a file that contains a list of files, one per line, to sign.", CommandOptionType.SingleValue);
+                var maxDegreeOfParallelism = cfg.Option("-mdop | --max-degree-of-parallelism", "The maximum number of concurrent signing operations.", CommandOptionType.SingleValue);
 
                 var file = cfg.Argument("file", "The path to the file.", multipleValues: true);
                 cfg.HelpOption("-? | -h | --help");
@@ -81,6 +83,19 @@ namespace AzureSignTool
                     if (!azureKeyVaultAccessToken.HasValue() && !CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
                     {
                         return E_INVALIDARG;
+                    }
+                    int? signingConcurrency = null;
+                    if (maxDegreeOfParallelism.HasValue())
+                    {
+                        if (int.TryParse(maxDegreeOfParallelism.Value(), out var maxSigningConcurrency) && maxSigningConcurrency > 0)
+                        {
+                            signingConcurrency = maxSigningConcurrency;
+                        }
+                        else
+                        {
+                            LoggerServiceLocator.Current.Log("Value specified for --max-degree-of-parallelism is not a valid integer.");
+                            return E_INVALIDARG;
+                        }
                     }
                     var listOfFilesToSign = new HashSet<string>();
                     listOfFilesToSign.UnionWith(file.Values);
@@ -154,15 +169,34 @@ namespace AzureSignTool
                             LoggerServiceLocator.Current.Log("Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
                     }
-
+                    int failed = 0, succeeded = 0;
                     LoggerServiceLocator.Current.Log("Creating Signer & building chain", LogLevel.Verbose);
+                    var cancellationSource = new CancellationTokenSource();
+                    Console.CancelKeyPress += (_, e) =>
+                    {
+                        e.Cancel = true;
+                        cancellationSource.Cancel();
+                        LoggerServiceLocator.Current.Log("Cancelling signing operations.");
+                    };
                     using (materialized)
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                     {
-                        bool anyFailed = false, anySucceeded = false;
-                        foreach (var filePath in listOfFilesToSign)
+                        var options = new ParallelOptions();
+                        if (signingConcurrency.HasValue)
                         {
-                            LoggerServiceLocator.Current.Log($"Signing file {filePath}", LogLevel.Verbose);
+                            options.MaxDegreeOfParallelism = signingConcurrency.Value;
+                        }
+                        Parallel.ForEach(listOfFilesToSign, options, () => (succeeded : 0, failed : 0), (filePath, pls, state) =>
+                        {
+                            if (cancellationSource.IsCancellationRequested)
+                            {
+                                pls.Stop();
+                            }
+                            if (pls.IsStopped)
+                            {
+                                return state;
+                            }
+                            LoggerServiceLocator.Current.Log($"Signing file {filePath}");
                             var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
                             switch (result)
                             {
@@ -172,25 +206,31 @@ namespace AzureSignTool
                             }
                             if (result == S_OK)
                             {
-                                anySucceeded = true;
                                 LoggerServiceLocator.Current.Log($"Signing completed successfully for file {filePath}.");
+                                return (state.succeeded + 1, state.failed);
                             }
                             else
                             {
-                                anyFailed = true;
                                 LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2} for file {filePath}.");
                                 if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
                                 {
                                     LoggerServiceLocator.Current.Log("Stopping file signing.");
-                                    return result;
+                                    pls.Stop();
                                 }
+                                return (state.succeeded, state.failed + 1);
                             }
-                        }
-                        if (anyFailed && !anySucceeded)
+                        }, result =>
+                        {
+                            Interlocked.Add(ref failed, result.failed);
+                            Interlocked.Add(ref succeeded, result.succeeded);
+                        });
+                        LoggerServiceLocator.Current.Log($"Successful operations: {succeeded}");
+                        LoggerServiceLocator.Current.Log($"Failed operations: {failed}");
+                        if (failed > 0 && succeeded == 0)
                         {
                             return E_ALL_FAILED;
                         }
-                        else if (anyFailed)
+                        else if (failed > 0)
                         {
                             return S_SOME_SUCCESS;
                         }
