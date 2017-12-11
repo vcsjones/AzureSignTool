@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 using static AzureSignTool.HRESULT;
 
@@ -44,20 +43,20 @@ namespace AzureSignTool
                 cfg.OnExecute(async () =>
                 {
                     X509Certificate2Collection certificates;
-                    switch (await GetAdditionalCertificates(additionalCertificates.Values))
+                    switch (GetAdditionalCertificates(additionalCertificates.Values))
                     {
                         case ErrorOr<X509Certificate2Collection>.Ok d:
                             certificates = d.Value;
                             break;
                         case ErrorOr<X509Certificate2Collection>.Err err:
-                            await LoggerServiceLocator.Current.Log(err.Error.Message);
+                            LoggerServiceLocator.Current.Log(err.Error.Message);
                             return E_INVALIDARG;
                         default:
-                            await LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
+                            LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
                             return E_INVALIDARG;
                     }
 
-                    if (!await CheckMutuallyExclusive(quiet, verbose))
+                    if (!CheckMutuallyExclusive(quiet, verbose))
                     {
                         return E_INVALIDARG;
                     }
@@ -71,24 +70,24 @@ namespace AzureSignTool
                         LoggerServiceLocator.Current.Level = LogLevel.Verbose;
                     }
 
-                    if (!await CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
-                        !await CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName) |
-                        !await CheckMutuallyExclusive(pageHashing, noPageHashing))
+                    if (!CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
+                        !CheckRequired(azureKeyVaultUrl, azureKeyVaultCertificateName) |
+                        !CheckMutuallyExclusive(pageHashing, noPageHashing))
                     {
                         return E_INVALIDARG;
                     }
-                    if (!azureKeyVaultAccessToken.HasValue() && !await CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
+                    if (!azureKeyVaultAccessToken.HasValue() && !CheckRequired(azureKeyVaultClientId, azureKeyVaultClientSecret))
                     {
                         return E_INVALIDARG;
                     }
                     if (string.IsNullOrWhiteSpace(file.Value))
                     {
-                        await LoggerServiceLocator.Current.Log("File is required.");
+                        LoggerServiceLocator.Current.Log("File is required.");
                         return E_INVALIDARG;
                     }
                     if (!File.Exists(file.Value))
                     {
-                        await LoggerServiceLocator.Current.Log("File does not exist.");
+                        LoggerServiceLocator.Current.Log("File does not exist.");
                         return E_FILE_NOT_FOUND;
                     }
                     var configuration = new AzureKeyVaultSignConfigurationSet
@@ -128,26 +127,29 @@ namespace AzureSignTool
                             materialized = ok.Value;
                             break;
                         default:
-                            await LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
+                            LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
                     }
+
+                    LoggerServiceLocator.Current.Log($"Creating Signer & building chain", LogLevel.Verbose);
                     using (materialized)
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                     {
+                        LoggerServiceLocator.Current.Log($"Signing file {file.Value}", LogLevel.Verbose);
                         var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
                         switch (result)
                         {
                             case COR_E_BADIMAGEFORMAT:
-                                await LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
                                 break;
                         }
                         if (result == S_OK)
                         {
-                            await LoggerServiceLocator.Current.Log("Signing completed successfully.");
+                            LoggerServiceLocator.Current.Log("Signing completed successfully.");
                         }
                         else
                         {
-                            await LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
+                            LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
                         }
                         return result;
                     }
@@ -180,7 +182,7 @@ namespace AzureSignTool
             }
         }
 
-        private static async Task<ErrorOr<X509Certificate2Collection>> GetAdditionalCertificates(IEnumerable<string> paths)
+        private static ErrorOr<X509Certificate2Collection> GetAdditionalCertificates(IEnumerable<string> paths)
         {
             var collection = new X509Certificate2Collection();
             try
@@ -195,7 +197,7 @@ namespace AzureSignTool
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
                             var certificate = new X509Certificate2(path);
-                            await LoggerServiceLocator.Current.Log($"Including additional certificate {certificate.Thumbprint}.", LogLevel.Verbose);
+                            LoggerServiceLocator.Current.Log($"Including additional certificate {certificate.Thumbprint}.", LogLevel.Verbose);
                             collection.Add(certificate);
                             break;
                         default:
@@ -205,14 +207,14 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
-                await LoggerServiceLocator.Current.Log($"An exception occured while including an additional certificate:\n{e}", LogLevel.Verbose);
+                LoggerServiceLocator.Current.Log($"An exception occured while including an additional certificate:\n{e}", LogLevel.Verbose);
                 return e;
             }
 
             return collection;
         }
 
-        private static async Task<bool> CheckMutuallyExclusive(params CommandOption[] commands)
+        private static bool CheckMutuallyExclusive(params CommandOption[] commands)
         {
             if (commands.Length < 2)
             {
@@ -221,18 +223,18 @@ namespace AzureSignTool
             var set = new HashSet<string>(commands.Where(c => c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 1)
             {
-                await LoggerServiceLocator.Current.Log($"Cannot use {String.Join(", ", set)} options together.");
+                LoggerServiceLocator.Current.Log($"Cannot use {String.Join(", ", set)} options together.");
                 return false;
             }
             return true;
         }
 
-        private static async Task<bool> CheckRequired(params CommandOption[] commands)
+        private static bool CheckRequired(params CommandOption[] commands)
         {
             var set = new HashSet<string>(commands.Where(c => !c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 0)
             {
-                await LoggerServiceLocator.Current.Log($"Options {String.Join(", ", set)} are required.");
+                LoggerServiceLocator.Current.Log($"Options {String.Join(", ", set)} are required.");
                 return false;
             }
             return true;

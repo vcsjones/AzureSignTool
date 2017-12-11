@@ -34,10 +34,11 @@ namespace AzureSignTool
 
         public async Task<byte[]> SignDigestAsync(byte[] digest)
         {
-            await LoggerServiceLocator.Current.Log($"Signing digest with key.", LogLevel.Verbose).ConfigureAwait(false);
+            LoggerServiceLocator.Current.Log($"Signing digest with key.", LogLevel.Verbose);
             var client = _configuration.Client;
             var algorithm = AlgorithmTranslator.SignatureAlgorithmToRsaJwsAlgId(_configuration.FileDigestAlgorithm);
             var signature = await client.SignAsync(_configuration.Key.KeyIdentifier.Identifier, algorithm, digest).ConfigureAwait(false);
+            LoggerServiceLocator.Current.Log($"Signed digest with key.", LogLevel.Verbose);
             return signature.Result;
         }
 
