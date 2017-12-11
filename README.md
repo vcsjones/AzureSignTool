@@ -120,10 +120,8 @@ present on the system.
 
 ## Exit Codes
 
-The exit code is an HRESULT. Successfully signing produces a result of `S_OK` ("0"). If the `--continue-on-error` flag is specified and
-more than one file is specified for signing, the exit code will be 0x20000001 if some files were signed successfully. If all files failed
-to sign, the exit code will be 0xA0000002. If only one file is signed or `--continue-on-error` is not specified, the exit code will be
-the HRESULT from `SignerSignEx3` of the file that failed to sign correctly.
+The exit code is an HRESULT. Successfully signing produces a result of `S_OK` ("0"). If all files fail to sign, the exit code is
+0xA0000002. If some were signed successfully, the exit code is 0x20000001.
 
 ## Cancellation
 
