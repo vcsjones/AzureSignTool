@@ -1,6 +1,7 @@
 ﻿using AzureSignTool.Interop;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace AzureSignTool
 {
@@ -27,16 +28,18 @@ namespace AzureSignTool
 
         private void Dispose(bool disposing)
         {
-            if (_handle != IntPtr.Zero)
+            GC.SuppressFinalize(this);
+            var cleanupHandle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
+            if (cleanupHandle != IntPtr.Zero)
             {
-                Marshal.DestroyStructure<SIGNER_FILE_INFO>(_handle);
-                Marshal.FreeHGlobal(_handle);
-                _handle = IntPtr.Zero;
+                Marshal.DestroyStructure<SIGNER_FILE_INFO>(cleanupHandle);
+                Marshal.FreeHGlobal(cleanupHandle);
             }
-            if (_filePathPtr != IntPtr.Zero)
+            var cleanupFilePathPtr = Interlocked.Exchange(ref _filePathPtr, IntPtr.Zero);
+            if (cleanupFilePathPtr != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(_filePathPtr);
-                _filePathPtr = IntPtr.Zero;
+                Marshal.FreeHGlobal(cleanupFilePathPtr);
+                cleanupFilePathPtr = IntPtr.Zero;
             }
         }
     }

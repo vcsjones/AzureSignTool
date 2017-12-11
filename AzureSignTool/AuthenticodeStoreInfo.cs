@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace AzureSignTool
 {
@@ -27,12 +28,13 @@ namespace AzureSignTool
 
         private void Dispose(bool disposing)
         {
-            if (_handle != IntPtr.Zero)
+            GC.SuppressFinalize(this);
+            var cleanupHandle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
+            if (cleanupHandle != IntPtr.Zero)
             {
-                Marshal.DestroyStructure<SIGNER_CERT_STORE_INFO>(_handle);
-                Marshal.FreeHGlobal(_handle);
+                Marshal.DestroyStructure<SIGNER_CERT_STORE_INFO>(cleanupHandle);
+                Marshal.FreeHGlobal(cleanupHandle);
             }
-            _handle = IntPtr.Zero;
         }
     }
 }

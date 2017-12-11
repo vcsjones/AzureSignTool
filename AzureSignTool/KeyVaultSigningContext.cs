@@ -49,9 +49,5 @@ namespace AzureSignTool
                 return Task.FromResult(publicKey.VerifyHash(digest, signature, _configuration.FileDigestAlgorithm, RSASignaturePadding.Pkcs1));
             }
         }
-
-        public void Dispose()
-        {
-        }
     }
 }

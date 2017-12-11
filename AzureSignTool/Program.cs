@@ -87,13 +87,13 @@ namespace AzureSignTool
                     int? signingConcurrency = null;
                     if (maxDegreeOfParallelism.HasValue())
                     {
-                        if (int.TryParse(maxDegreeOfParallelism.Value(), out var maxSigningConcurrency) && maxSigningConcurrency > 0)
+                        if (int.TryParse(maxDegreeOfParallelism.Value(), out var maxSigningConcurrency) && (maxSigningConcurrency > 0 || maxSigningConcurrency == -1))
                         {
                             signingConcurrency = maxSigningConcurrency;
                         }
                         else
                         {
-                            LoggerServiceLocator.Current.Log("Value specified for --max-degree-of-parallelism is not a valid integer.");
+                            LoggerServiceLocator.Current.Log("Value specified for --max-degree-of-parallelism is not a valid value.");
                             return E_INVALIDARG;
                         }
                     }
