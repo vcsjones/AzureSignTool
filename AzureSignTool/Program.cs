@@ -36,8 +36,10 @@ namespace AzureSignTool
                 var quiet = cfg.Option("-q | --quiet", "Do not print any output to the console.", CommandOptionType.NoValue);
                 var pageHashing = cfg.Option("-ph | --page-hashing", "Generate page hashes for executable files if supported.", CommandOptionType.NoValue);
                 var noPageHashing = cfg.Option("-nph | --no-page-hashing", "Suppress page hashes for executable files if supported.", CommandOptionType.NoValue);
+                var continueOnError = cfg.Option("-coe | --continue-on-error", "Continue signing multiple files if an error occurs.", CommandOptionType.NoValue);
+                var inputFileList = cfg.Option("-ifl | --input-file-list", "A path to a file that contains a list of files, one per line, to sign.", CommandOptionType.SingleValue);
 
-                var file = cfg.Argument("file", "The path to the file.");
+                var file = cfg.Argument("file", "The path to the file.", multipleValues: true);
                 cfg.HelpOption("-? | -h | --help");
 
                 cfg.OnExecute(async () =>
@@ -80,15 +82,37 @@ namespace AzureSignTool
                     {
                         return E_INVALIDARG;
                     }
-                    if (string.IsNullOrWhiteSpace(file.Value))
+                    var listOfFilesToSign = new HashSet<string>();
+                    listOfFilesToSign.UnionWith(file.Values);
+                    if (inputFileList.HasValue())
                     {
-                        LoggerServiceLocator.Current.Log("File is required.");
+                        if (!File.Exists(inputFileList.Value()))
+                        {
+                            LoggerServiceLocator.Current.Log($"Input file list {inputFileList.Value()} does not exist.");
+                            return E_INVALIDARG;
+                        }
+                        listOfFilesToSign.UnionWith(File.ReadAllLines(inputFileList.Value()));
+                    }
+                    if (listOfFilesToSign.Count == 0)
+                    {
+                        LoggerServiceLocator.Current.Log("File or list of files is required.");
                         return E_INVALIDARG;
                     }
-                    if (!File.Exists(file.Value))
+                    foreach (var filePath in listOfFilesToSign)
                     {
-                        LoggerServiceLocator.Current.Log("File does not exist.");
-                        return E_FILE_NOT_FOUND;
+                        try
+                        {
+                            if (!File.Exists(filePath))
+                            {
+                                LoggerServiceLocator.Current.Log($"File {filePath} does not exist or does not have permission.");
+                                return E_FILE_NOT_FOUND;
+                            }
+                        }
+                        catch
+                        {
+                            LoggerServiceLocator.Current.Log($"File {filePath} does not exist or does not have permission.");
+                            return E_FILE_NOT_FOUND;
+                        }
                     }
                     var configuration = new AzureKeyVaultSignConfigurationSet
                     {
@@ -127,31 +151,53 @@ namespace AzureSignTool
                             materialized = ok.Value;
                             break;
                         default:
-                            LoggerServiceLocator.Current.Log($"Failed to get configuration from Azure Key Vault.");
+                            LoggerServiceLocator.Current.Log("Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
                     }
 
-                    LoggerServiceLocator.Current.Log($"Creating Signer & building chain", LogLevel.Verbose);
+                    LoggerServiceLocator.Current.Log("Creating Signer & building chain", LogLevel.Verbose);
                     using (materialized)
                     using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                     {
-                        LoggerServiceLocator.Current.Log($"Signing file {file.Value}", LogLevel.Verbose);
-                        var result = signer.SignFile(file.Value, description.Value(), descriptionUrl.Value(), performPageHashing);
-                        switch (result)
+                        bool anyFailed = false, anySucceeded = false;
+                        foreach (var filePath in listOfFilesToSign)
                         {
-                            case COR_E_BADIMAGEFORMAT:
-                                LoggerServiceLocator.Current.Log("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
-                                break;
+                            LoggerServiceLocator.Current.Log($"Signing file {filePath}", LogLevel.Verbose);
+                            var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
+                            switch (result)
+                            {
+                                case COR_E_BADIMAGEFORMAT:
+                                    LoggerServiceLocator.Current.Log($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
+                                    break;
+                            }
+                            if (result == S_OK)
+                            {
+                                anySucceeded = true;
+                                LoggerServiceLocator.Current.Log($"Signing completed successfully for file {filePath}.");
+                            }
+                            else
+                            {
+                                anyFailed = true;
+                                LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2} for file {filePath}.");
+                                if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
+                                {
+                                    LoggerServiceLocator.Current.Log("Stopping file signing.");
+                                    return result;
+                                }
+                            }
                         }
-                        if (result == S_OK)
+                        if (anyFailed && !anySucceeded)
                         {
-                            LoggerServiceLocator.Current.Log("Signing completed successfully.");
+                            return E_ALL_FAILED;
+                        }
+                        else if (anyFailed)
+                        {
+                            return S_SOME_SUCCESS;
                         }
                         else
                         {
-                            LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2}.");
+                            return S_OK;
                         }
-                        return result;
                     }
                 });
             });
@@ -161,7 +207,6 @@ namespace AzureSignTool
             }
             return application.Execute(args);
         }
-
 
         private static HashAlgorithmName? AlgorithmFromInput(string value)
         {
