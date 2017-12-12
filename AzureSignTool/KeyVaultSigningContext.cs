@@ -12,13 +12,15 @@ namespace AzureSignTool
     public class KeyVaultSigningContext
     {
         private readonly AzureKeyVaultMaterializedConfiguration _configuration;
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Creates a new siging context.
         /// </summary>
-        public KeyVaultSigningContext(AzureKeyVaultMaterializedConfiguration configuration)
+        public KeyVaultSigningContext(AzureKeyVaultMaterializedConfiguration configuration, ILogger logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         /// <summary>
@@ -34,11 +36,11 @@ namespace AzureSignTool
 
         public async Task<byte[]> SignDigestAsync(byte[] digest)
         {
-            LoggerServiceLocator.Current.Log($"Signing digest with key.", LogLevel.Verbose);
+            _logger.Log("Signing digest with key.", LogLevel.Verbose);
             var client = _configuration.Client;
             var algorithm = AlgorithmTranslator.SignatureAlgorithmToRsaJwsAlgId(_configuration.FileDigestAlgorithm);
             var signature = await client.SignAsync(_configuration.Key.KeyIdentifier.Identifier, algorithm, digest).ConfigureAwait(false);
-            LoggerServiceLocator.Current.Log($"Signed digest with key.", LogLevel.Verbose);
+            _logger.Log("Signed digest with key.", LogLevel.Verbose);
             return signature.Result;
         }
 
