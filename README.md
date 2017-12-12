@@ -15,7 +15,9 @@ Example usage:
 	  -tr http://timestamp.digicert.com \
 	  -td sha384 \
 	  -v \
-	  C:\path\to\program.exe
+	  -ifl C:\list\of\file\to\sign.txt \
+	  C:\additional\file\to\sign\program1.exe \
+	  C:\additional\file\to\sign\program2.exe
 	  
 	  
 The `--help` or `sign --help` option provides more detail about each parameter.
@@ -85,6 +87,14 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--quiet` [short: `-q`, required: no]: Do not print output to the log. This parameter does not accept a value and cannot be
 	combine with the `--verbose` option. The exit code of the process can be used to determine success or failure of the sign operation.
 	
+* `--coninue-on-error` [short: `-coe, required: no]: If multiple files to sign are specified, this flag will cause the signing process to
+	move on to the next file when signing fails. This flag modifies the exit code of the program. See the Exit Codes section for more
+	information.
+	
+* `--input-file-list` [short: `-ifl`, required: no]: Specifies a path to a text file which contains a list of files to sign, with one
+	file per-line in the text file. If this parameter is specified, it is combined with files directly specified on the command line. The
+	distinct result of the two options is signed.
+	
 ### Advanced
 
 * `--page-hashing` [short: `-ph`, required: no]: Causes the Authenticode signing process to generate hashes of pages for verifying when
@@ -94,6 +104,11 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `---no-page-hashing` [short: `-nph`, required: no]: Causes the Authenticode signing process to exclude hashes of pages for verifying when
 	the application is paged in to memory. If this flag is omitted, the default configuration for the operating system will be used.
 	This flag will not affect non-PE file formats.
+	
+* `--max-degree-of-parallelism` [short: `-mdop`, required: no]: When signing multiple files, specifies the maximum number of concurrent
+	operations. Setting this value does not guarentee that number of concurrent operations will be performed. If this value is unspecified,
+	the system will use the default based on the number of available processor threads. Setting this value to "1" disable concurrent
+	signing.
 
 In most circumances, using the defaults for page hashing is recommended, which can be done by simply omitting both of the parameters.
 
@@ -105,7 +120,13 @@ present on the system.
 
 ## Exit Codes
 
-The exit code is an HRESULT. Successfully signing produces a result of `S_OK`, or "0".
+The exit code is an HRESULT. Successfully signing produces a result of `S_OK` ("0"). If all files fail to sign, the exit code is
+0xA0000002. If some were signed successfully, the exit code is 0x20000001.
+
+## Cancellation
+
+The standard Ctrl+C key sequence is used to cancel the signing. Any in-flight signing operations are finished, then the process exits with
+a status code according to the complete signing operations.
 	  
 ## Requirements
 

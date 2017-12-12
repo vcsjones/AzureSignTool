@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace AzureSignTool
 {
@@ -9,11 +10,11 @@ namespace AzureSignTool
 
         public static void DestroyAndFreeHGlobal<TStructure>(ref IntPtr ptr) where TStructure : struct
         {
-            if (ptr != IntPtr.Zero)
+            var cleanupPtr = Interlocked.Exchange(ref ptr, IntPtr.Zero);
+            if (cleanupPtr != IntPtr.Zero)
             {
-                Marshal.DestroyStructure<TStructure>(ptr);
-                Marshal.FreeHGlobal(ptr);
-                ptr = IntPtr.Zero;
+                Marshal.DestroyStructure<TStructure>(cleanupPtr);
+                Marshal.FreeHGlobal(cleanupPtr);
             }
         }
     }
