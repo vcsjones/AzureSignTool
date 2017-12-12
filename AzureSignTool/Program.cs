@@ -170,7 +170,6 @@ namespace AzureSignTool
                             return E_INVALIDARG;
                     }
                     int failed = 0, succeeded = 0;
-                    LoggerServiceLocator.Current.Log("Creating Signer & building chain", LogLevel.Verbose);
                     var cancellationSource = new CancellationTokenSource();
                     Console.CancelKeyPress += (_, e) =>
                     {
@@ -179,51 +178,58 @@ namespace AzureSignTool
                         LoggerServiceLocator.Current.Log("Cancelling signing operations.");
                     };
                     using (materialized)
-                    using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates))
                     {
                         var options = new ParallelOptions();
                         if (signingConcurrency.HasValue)
                         {
                             options.MaxDegreeOfParallelism = signingConcurrency.Value;
                         }
-                        Parallel.ForEach(listOfFilesToSign, options, () => (succeeded : 0, failed : 0), (filePath, pls, state) =>
-                        {
-                            if (cancellationSource.IsCancellationRequested)
-                            {
-                                pls.Stop();
-                            }
-                            if (pls.IsStopped)
-                            {
-                                return state;
-                            }
-                            LoggerServiceLocator.Current.Log($"Signing file {filePath}");
-                            var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
-                            switch (result)
-                            {
-                                case COR_E_BADIMAGEFORMAT:
-                                    LoggerServiceLocator.Current.Log($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
-                                    break;
-                            }
-                            if (result == S_OK)
-                            {
-                                LoggerServiceLocator.Current.Log($"Signing completed successfully for file {filePath}.");
-                                return (state.succeeded + 1, state.failed);
-                            }
-                            else
-                            {
-                                LoggerServiceLocator.Current.Log($"Signing failed with error {result:X2} for file {filePath}.");
-                                if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
-                                {
-                                    LoggerServiceLocator.Current.Log("Stopping file signing.");
-                                    pls.Stop();
-                                }
-                                return (state.succeeded, state.failed + 1);
-                            }
-                        }, result =>
-                        {
-                            Interlocked.Add(ref failed, result.failed);
-                            Interlocked.Add(ref succeeded, result.succeeded);
-                        });
+                        Parallel.ForEach(listOfFilesToSign, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                      {
+                          if (cancellationSource.IsCancellationRequested)
+                          {
+                              pls.Stop();
+                          }
+                          if (pls.IsStopped)
+                          {
+                              return state;
+                          }
+                          using (var logger = LoggerServiceLocator.Current.Scoped())
+                          {
+                              logger.Log("Creating Signer & building chain", LogLevel.Verbose);
+
+                              using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates, logger))
+                              {
+                                  logger.Log($"Signing file {filePath}");
+                                  var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
+                                  switch (result)
+                                  {
+                                      case COR_E_BADIMAGEFORMAT:
+                                          logger.Log($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
+                                          break;
+                                  }
+                                  if (result == S_OK)
+                                  {
+                                      logger.Log($"Signing completed successfully for file {filePath}.");
+                                      return (state.succeeded + 1, state.failed);
+                                  }
+                                  else
+                                  {
+                                      logger.Log($"Signing failed with error {result:X2} for file {filePath}.");
+                                      if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
+                                      {
+                                          logger.Log("Stopping file signing.");
+                                          pls.Stop();
+                                      }
+                                      return (state.succeeded, state.failed + 1);
+                                  }
+                              }
+                          }
+                      }, result =>
+                      {
+                          Interlocked.Add(ref failed, result.failed);
+                          Interlocked.Add(ref succeeded, result.succeeded);
+                      });
                         LoggerServiceLocator.Current.Log($"Successful operations: {succeeded}");
                         LoggerServiceLocator.Current.Log($"Failed operations: {failed}");
                         if (failed > 0 && succeeded == 0)

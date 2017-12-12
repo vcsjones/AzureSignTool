@@ -11,9 +11,12 @@ namespace AzureSignTool
         private readonly TimeStampConfiguration _timeStampConfiguration;
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
+        private readonly ILogger _logger;
 
-        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates)
+        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates,
+            ILogger logger)
         {
+            _logger = logger;
             _timeStampConfiguration = timeStampConfiguration;
             _configuration = configuration;
             _certificateStore = MemoryCertificateStore.Create();
@@ -73,11 +76,11 @@ namespace AzureSignTool
                         break;
                 }
 
-                LoggerServiceLocator.Current.Log("Getting SIP Data", LogLevel.Verbose);
+                _logger.Log("Getting SIP Data", LogLevel.Verbose);
                 using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl,
                     timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
                 {
-                    LoggerServiceLocator.Current.Log("Calling SignerSignEx3", LogLevel.Verbose);
+                    _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
                     return mssign32.SignerSignEx3
                     (
                         data.ModifyFlags(flags),
@@ -103,7 +106,6 @@ namespace AzureSignTool
         {
             _chain.Dispose();
             _certificateStore.Close();
-            _configuration.Dispose();
         }
 
         private int SignCallback(
@@ -115,8 +117,8 @@ namespace AzureSignTool
             out CRYPTOAPI_BLOB blob
         )
         {
-            LoggerServiceLocator.Current.Log("SignCallback", LogLevel.Verbose);
-            var context = new KeyVaultSigningContext(_configuration);
+            _logger.Log("SignCallback", LogLevel.Verbose);
+            var context = new KeyVaultSigningContext(_configuration, _logger);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
             var resultPtr = Marshal.AllocHGlobal(result.Length);
             Marshal.Copy(result, 0, resultPtr, result.Length);
