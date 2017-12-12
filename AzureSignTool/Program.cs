@@ -106,7 +106,7 @@ namespace AzureSignTool
                             LoggerServiceLocator.Current.Log($"Input file list {inputFileList.Value()} does not exist.");
                             return E_INVALIDARG;
                         }
-                        listOfFilesToSign.UnionWith(File.ReadAllLines(inputFileList.Value()));
+                        listOfFilesToSign.UnionWith(File.ReadAllLines(inputFileList.Value()).Where(s => !string.IsNullOrWhiteSpace(s)));
                     }
                     if (listOfFilesToSign.Count == 0)
                     {
