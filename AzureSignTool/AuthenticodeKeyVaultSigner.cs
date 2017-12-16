@@ -49,7 +49,6 @@ namespace AzureSignTool
             }
 
             using (var contextReceiver = PrimitiveStructureOutManager.Create(mssign32.SignerFreeSignerContext))
-            using (var sipState = PrimitiveStructureOutManager.Create())
             using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
             using (var fileInfo = new AuthenticodeSignerFile(path))
             using (var attributes = new AuthenticodeSignerAttributes(description, descriptionUrl))
