@@ -89,6 +89,11 @@ namespace AzureSignTool
         public override void Dispose()
         {
             base.Dispose();
+            var clientData = Marshal.PtrToStructure<APPX_SIP_CLIENT_DATA>(_extraHandle);
+            if (clientData.pAppxSipState != IntPtr.Zero)
+            {
+                Marshal.Release(clientData.pAppxSipState);
+            }
             Marshal2.DestroyAndFreeHGlobal<SIGNER_SIGN_EX3_PARAMS>(ref _paramsHandle);
             Marshal2.DestroyAndFreeHGlobal<APPX_SIP_CLIENT_DATA>(ref _extraHandle);
         }
