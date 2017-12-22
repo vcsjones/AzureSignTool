@@ -12,6 +12,7 @@ namespace AzureSignTool
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
         private readonly ILogger _logger;
+        private readonly SignCallback _signCallback;
 
         public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates,
             ILogger logger)
@@ -34,6 +35,7 @@ namespace AzureSignTool
             {
                 _certificateStore.Add(_chain.ChainElements[i].Certificate);
             }
+            _signCallback = SignCallback;
         }
 
         public int SignFile(string path, string description, string descriptionUrl, bool? pageHashing)
@@ -74,10 +76,9 @@ namespace AzureSignTool
                         timestampUrl = null;
                         break;
                 }
-
                 _logger.Log("Getting SIP Data", LogLevel.Verbose);
                 using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl,
-                    timestampAlgorithmOid, SignCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
+                    timestampAlgorithmOid, _signCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
                 {
                     _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
                     return mssign32.SignerSignEx3
@@ -113,7 +114,7 @@ namespace AzureSignTool
             uint algId,
             byte[] pDigestToSign,
             uint dwDigestToSign,
-            out CRYPTOAPI_BLOB blob
+            ref CRYPTOAPI_BLOB blob
         )
         {
             _logger.Log("SignCallback", LogLevel.Verbose);

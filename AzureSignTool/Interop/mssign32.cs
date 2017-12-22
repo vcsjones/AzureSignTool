@@ -248,6 +248,6 @@ namespace AzureSignTool.Interop
         [param: In, MarshalAs(UnmanagedType.U4)] uint algId,
         [param: In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = 4)] byte[] pDigestToSign,
         [param: In, MarshalAs(UnmanagedType.U4)] uint dwDigestToSign,
-        [param: Out] out CRYPTOAPI_BLOB blob
+        [param: In, Out] ref CRYPTOAPI_BLOB blob
         );
 }
