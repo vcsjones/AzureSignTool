@@ -9,10 +9,10 @@ namespace AzureSignTool
     public class AzureKeyVaultMaterializedConfiguration : IDisposable
     {
         public AzureKeyVaultMaterializedConfiguration(KeyVaultClient client, X509Certificate2 publicCertificate,
-            KeyBundle key, Crypto.HashAlgorithmName fileDigestAlgorithm)
+            string keyId, Crypto.HashAlgorithmName fileDigestAlgorithm)
         {
             Client = client;
-            Key = key;
+            KeyId = keyId;
             PublicCertificate = publicCertificate;
             FileDigestAlgorithm = fileDigestAlgorithm;
         }
@@ -21,7 +21,7 @@ namespace AzureSignTool
 
         public X509Certificate2 PublicCertificate { get; }
         public KeyVaultClient Client { get; }
-        public KeyBundle Key { get; }
+        public string KeyId { get; }
 
         public void Dispose()
         {

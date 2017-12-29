@@ -58,22 +58,7 @@ namespace AzureSignTool
                 return e;
             }
             var keyId = azureCertificate.KeyIdentifier;
-            KeyBundle key;
-            try
-            {
-                LoggerServiceLocator.Current.Log($"Retrieving key {keyId.Identifier}.", LogLevel.Verbose);
-                key = await vault.GetKeyAsync(keyId.Identifier);
-                LoggerServiceLocator.Current.Log($"Retrieved key {keyId.Identifier}.", LogLevel.Verbose);
-            }
-            catch (Exception e)
-            {
-                if (!authenticationFailure)
-                {
-                    LoggerServiceLocator.Current.Log($"Failed to retrieve key {keyId.Identifier} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
-                }
-                return e;
-            }
-            return new AzureKeyVaultMaterializedConfiguration(vault, certificate, key, configuration.FileDigestAlgorithm);
+            return new AzureKeyVaultMaterializedConfiguration(vault, certificate, keyId.Identifier, configuration.FileDigestAlgorithm);
 
         }
     }
