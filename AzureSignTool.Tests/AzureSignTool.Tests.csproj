@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RuntimeIdentifiers>win10-x64;win10-x86</RuntimeIdentifiers>
     <PlatformTarget>anycpu</PlatformTarget>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

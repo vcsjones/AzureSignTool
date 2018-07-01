@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSignTool", "AzureSignTool\AzureSignTool.csproj", "{98E0A863-FE5E-452F-BF05-427F92915D24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSignTool.Tests", "AzureSignTool.Tests\AzureSignTool.Tests.csproj", "{44CE613A-8103-4AFC-8849-FD400B2B2A45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSignTool.Tests", "AzureSignTool.Tests\AzureSignTool.Tests.csproj", "{44CE613A-8103-4AFC-8849-FD400B2B2A45}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

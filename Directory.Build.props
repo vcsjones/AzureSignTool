@@ -1,0 +1,6 @@
+<Project>
+ <PropertyGroup>
+   <Deterministic>true</Deterministic>
+   <LangVersion>7.2</LangVersion>
+ </PropertyGroup>
+</Project>
