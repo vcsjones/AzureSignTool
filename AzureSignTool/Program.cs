@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -15,8 +16,19 @@ namespace AzureSignTool
     {
         static int Main(string[] args)
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
+                return E_PLATFORMNOTSUPPORTED;
+            }
+
             LoggerServiceLocator.Current = new ConsoleLogger();
-            var application = new CommandLineApplication(throwOnUnexpectedArg: false);
+            var application = new CommandLineApplication(throwOnUnexpectedArg: false)
+            {
+                Name = "azuresigntool",
+                FullName = "Azure Sign Tool",
+            };
+
             var signCommand = application.Command("sign", throwOnUnexpectedArg: false, configuration: cfg =>
             {
                 cfg.Description = "Signs a file.";
@@ -251,6 +263,11 @@ namespace AzureSignTool
             {
                 application.ShowHelp();
             }
+            application.OnExecute(() =>
+            {
+                application.ShowHelp();
+                return 0;
+            });
             return application.Execute(args);
         }
 

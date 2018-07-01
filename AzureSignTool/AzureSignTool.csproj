@@ -1,21 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <PlatformTarget>anycpu</PlatformTarget>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>2.0.0</VersionPrefix>
     <Authors>Kevin Jones</Authors>
-    <Description>Azure SignTool</Description>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>AzureSignTool.snk</AssemblyOriginatorKeyFile>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>azuresigntool</ToolCommandName>
+    <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>
+    <PackageProjectUrl>https://github.com/vcsjones/AzureSignTool</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vcsjones/AzureSignTool</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>azuresigntool;azure;keyvault;codesign</PackageTags>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
-    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.17.2" />
-    <PackageReference Include="Microsoft.Azure.KeyVault" Version="2.3.2" />
-    <PackageReference Include="Microsoft.Azure.KeyVault.Cryptography" Version="2.0.5" />
-    <PackageReference Include="System.Net.Http" Version="4.3.3" />
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.19.8" />
+    <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Azure.KeyVault.Cryptography" Version="3.0.0" />
   </ItemGroup>
 </Project>
