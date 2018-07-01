@@ -25,6 +25,7 @@ namespace AzureSignTool
             var extension = Path.GetExtension(filePath).ToLower();
             switch (extension)
             {
+                case ".msix":
                 case ".appx":
                 case ".eappx":
                 case ".appxbundle":
