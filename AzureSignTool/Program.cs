@@ -259,14 +259,10 @@ namespace AzureSignTool
                     }
                 });
             });
-            if (args.Length == 0)
-            {
-                application.ShowHelp();
-            }
             application.OnExecute(() =>
             {
                 application.ShowHelp();
-                return 0;
+                return E_INVALIDARG;
             });
             return application.Execute(args);
         }

@@ -99,7 +99,7 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal readonly unsafe struct SIGNER_CERT_UNION
+    internal unsafe struct SIGNER_CERT_UNION
     {
         public SIGNER_CERT_UNION(SIGNER_CERT_STORE_INFO* certStoreInfo)
         {
@@ -107,7 +107,7 @@ namespace AzureSignTool.Interop
         }
 
         [field: FieldOffset(0)]
-        public readonly SIGNER_CERT_STORE_INFO* pSpcChainInfo;
+        public SIGNER_CERT_STORE_INFO* pSpcChainInfo;
     }
 
     internal enum SignerCertChoice : uint
@@ -148,10 +148,10 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal unsafe readonly struct SIGNER_SUBJECT_INFO_UNION
+    internal unsafe struct SIGNER_SUBJECT_INFO_UNION
     {
         [FieldOffset(0)]
-        public readonly SIGNER_FILE_INFO* file;
+        public SIGNER_FILE_INFO* file;
 
         public SIGNER_SUBJECT_INFO_UNION(SIGNER_FILE_INFO* file)
         {

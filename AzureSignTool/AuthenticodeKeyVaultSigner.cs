@@ -104,7 +104,7 @@ namespace AzureSignTool
                 var subjectIndex = 0u;
                 var signerSubjectInfoUnion = new SIGNER_SUBJECT_INFO_UNION(&fileInfo);
                 var subjectInfo = new SIGNER_SUBJECT_INFO(&subjectIndex, SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE, signerSubjectInfoUnion);
-                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pwszName: pDescriptionWithNull, pwszInfo: pDescriptionUrlWithNull);
+                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pDescriptionWithNull, pDescriptionUrlWithNull);
                 var storeInfo = new SIGNER_CERT_STORE_INFO(
                     dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
                     hCertStore: _certificateStore.Handle,
