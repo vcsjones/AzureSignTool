@@ -6,21 +6,21 @@ namespace AzureSignTool.Interop
     internal static class mssign32
     {
         [method: DllImport(nameof(mssign32), EntryPoint = "SignerSignEx3", CallingConvention = CallingConvention.Winapi)]
-        public static extern int SignerSignEx3
+        public static unsafe extern int SignerSignEx3
         (
             [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
-            [param: In] IntPtr pSubjectInfo,
-            [param: In] IntPtr pSignerCert,
-            [param: In] IntPtr pSignatureInfo,
+            [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
+            [param: In] SIGNER_CERT* pSignerCert,
+            [param: In] SIGNER_SIGNATURE_INFO* pSignatureInfo,
             [param: In] IntPtr pProviderInfo,
             [param: In] SignerSignTimeStampFlags dwTimestampFlags,
-            [param: In] IntPtr pszTimestampAlgorithmOid,
-            [param: In] IntPtr pwszHttpTimeStamp,
+            [param: In] byte* pszTimestampAlgorithmOid,
+            [param: In] char* pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
             [param: In] IntPtr pSipData,
-            [param: In] IntPtr ppSignerContext,
+            [param: In] IntPtr* ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
-            [param: In] IntPtr pSignInfo,
+            [param: In] SIGN_INFO* pSignInfo,
             [param: In] IntPtr pReserved
         );
 
@@ -57,10 +57,15 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal struct SIGNER_SIGNATURE_INFO_UNION
+    internal unsafe struct SIGNER_SIGNATURE_INFO_UNION
     {
+        public SIGNER_SIGNATURE_INFO_UNION(SIGNER_ATTR_AUTHCODE* pAttrAuthcode)
+        {
+            this.pAttrAuthcode = pAttrAuthcode;
+        }
+
         [field: FieldOffset(0)]
-        public IntPtr pAttrAuthcode;
+        public SIGNER_ATTR_AUTHCODE* pAttrAuthcode;
     }
 
     internal enum SignerSignTimeStampFlags : uint
@@ -94,10 +99,15 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal struct SIGNER_CERT_UNION
+    internal readonly unsafe struct SIGNER_CERT_UNION
     {
-        [field: MarshalAs(UnmanagedType.SysInt), FieldOffset(0)]
-        public IntPtr pSpcChainInfo;
+        public SIGNER_CERT_UNION(SIGNER_CERT_STORE_INFO* certStoreInfo)
+        {
+            pSpcChainInfo = certStoreInfo;
+        }
+
+        [field: FieldOffset(0)]
+        public readonly SIGNER_CERT_STORE_INFO* pSpcChainInfo;
     }
 
     internal enum SignerCertChoice : uint
@@ -121,14 +131,14 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_SUBJECT_INFO
+    internal unsafe struct SIGNER_SUBJECT_INFO
     {
         public uint cbSize;
-        public IntPtr pdwIndex;
+        public uint* pdwIndex;
         public SignerSubjectInfoUnionChoice dwSubjectChoice;
         public SIGNER_SUBJECT_INFO_UNION unionInfo;
 
-        public SIGNER_SUBJECT_INFO(IntPtr pdwIndex, SignerSubjectInfoUnionChoice dwSubjectChoice, SIGNER_SUBJECT_INFO_UNION unionInfo)
+        public SIGNER_SUBJECT_INFO(uint* pdwIndex, SignerSubjectInfoUnionChoice dwSubjectChoice, SIGNER_SUBJECT_INFO_UNION unionInfo)
         {
             cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>();
             this.pdwIndex = pdwIndex;
@@ -138,25 +148,25 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Explicit)]
-    internal struct SIGNER_SUBJECT_INFO_UNION
+    internal unsafe readonly struct SIGNER_SUBJECT_INFO_UNION
     {
         [FieldOffset(0)]
-        public IntPtr file;
+        public readonly SIGNER_FILE_INFO* file;
 
-        public SIGNER_SUBJECT_INFO_UNION(IntPtr file)
+        public SIGNER_SUBJECT_INFO_UNION(SIGNER_FILE_INFO* file)
         {
             this.file = file;
         }
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_FILE_INFO
+    internal unsafe struct SIGNER_FILE_INFO
     {
         public uint cbSize;
-        public IntPtr pwszFileName;
+        public char* pwszFileName;
         public IntPtr hFile;
 
-        public SIGNER_FILE_INFO(IntPtr pwszFileName, IntPtr hFile)
+        public SIGNER_FILE_INFO(char* pwszFileName, IntPtr hFile)
         {
             cbSize = (uint)Marshal.SizeOf<SIGNER_FILE_INFO>();
             this.pwszFileName = pwszFileName;
@@ -196,16 +206,16 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_ATTR_AUTHCODE
+    internal unsafe struct SIGNER_ATTR_AUTHCODE
     {
         public uint cbSize;
         public uint fCommercial;
         public uint fIndividual;
 
-        public IntPtr pwszName;
-        public IntPtr pwszInfo;
+        public char* pwszName;
+        public char* pwszInfo;
 
-        public SIGNER_ATTR_AUTHCODE(IntPtr pwszName, IntPtr pwszInfo)
+        public SIGNER_ATTR_AUTHCODE(char* pwszName, char* pwszInfo)
         {
             cbSize = (uint)Marshal.SizeOf<SIGNER_ATTR_AUTHCODE>();
             fCommercial = 0;

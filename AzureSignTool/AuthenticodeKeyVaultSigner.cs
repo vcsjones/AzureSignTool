@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace AzureSignTool
 {
@@ -38,8 +39,14 @@ namespace AzureSignTool
             _signCallback = SignCallback;
         }
 
-        public int SignFile(string path, string description, string descriptionUrl, bool? pageHashing)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing)
         {
+            void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
+            {
+                str.CopyTo(destination);
+                destination[destination.Length - 1] = '\0';
+            }
+
             var flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
             if (pageHashing == true)
             {
@@ -50,55 +57,94 @@ namespace AzureSignTool
                 flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
             }
 
-            using (var contextReceiver = PrimitiveStructureOutManager.Create(mssign32.SignerFreeSignerContext))
-            using (var storeInfo = new AuthenticodeSignerCertStoreInfo(_certificateStore, _configuration.PublicCertificate))
-            using (var fileInfo = new AuthenticodeSignerFile(path))
-            using (var attributes = new AuthenticodeSignerAttributes(description, descriptionUrl))
+            SignerSignTimeStampFlags timeStampFlags;
+            ReadOnlySpan<byte> timestampAlgorithmOid;
+            string timestampUrl;
+            switch (_timeStampConfiguration.Type)
             {
-                SignerSignTimeStampFlags timeStampFlags;
-                string timestampAlgorithmOid;
-                string timestampUrl;
-                switch (_timeStampConfiguration.Type)
-                {
-                    case TimeStampType.Authenticode:
-                        timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_AUTHENTICODE;
-                        timestampAlgorithmOid = null;
-                        timestampUrl = _timeStampConfiguration.Url;
-                        break;
-                    case TimeStampType.RFC3161:
-                        timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_RFC3161;
-                        timestampAlgorithmOid = AlgorithmTranslator.HashAlgorithmToOid(_timeStampConfiguration.DigestAlgorithm);
-                        timestampUrl = _timeStampConfiguration.Url;
-                        break;
-                    default:
-                        timeStampFlags = 0;
-                        timestampAlgorithmOid = null;
-                        timestampUrl = null;
-                        break;
-                }
+                case TimeStampType.Authenticode:
+                    timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_AUTHENTICODE;
+                    timestampAlgorithmOid = default;
+                    timestampUrl = _timeStampConfiguration.Url;
+                    break;
+                case TimeStampType.RFC3161:
+                    timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_RFC3161;
+                    timestampAlgorithmOid = AlgorithmTranslator.HashAlgorithmToOidAsciiTerminated(_timeStampConfiguration.DigestAlgorithm);
+                    timestampUrl = _timeStampConfiguration.Url;
+                    break;
+                default:
+                    timeStampFlags = 0;
+                    timestampAlgorithmOid = default;
+                    timestampUrl = null;
+                    break;
+            }
+
+            Span<char> pathWithNull = path.Length > 0x100 ? new char[path.Length + 1] : stackalloc char[path.Length + 1];
+            Span<char> descriptionWithNull = description.Length > 0x100 ? new char[description.Length + 1] : stackalloc char[description.Length + 1];
+            Span<char> descriptionUrlWithNull = descriptionUrl.Length > 0x100 ? new char[descriptionUrl.Length + 1] : stackalloc char[descriptionUrl.Length + 1];
+            Span<char> timestampUrlWithNull = timestampUrl == null ?
+                default : timestampUrl.Length > 0x100 ?
+                new char[timestampUrl.Length + 1] : stackalloc char[timestampUrl.Length + 1];
+
+            CopyAndNullTerminate(path, pathWithNull);
+            CopyAndNullTerminate(description, descriptionWithNull);
+            CopyAndNullTerminate(descriptionUrl, descriptionUrlWithNull);
+            if (timestampUrl != null)
+            {
+                CopyAndNullTerminate(timestampUrl, timestampUrlWithNull);
+            }
+
+            fixed (byte* pTimestampAlgorithm = &timestampAlgorithmOid.GetPinnableReference())
+            fixed (char* pTimestampUrlWithNull = &timestampUrlWithNull.GetPinnableReference())
+            fixed (char* pPathWithNull = &pathWithNull.GetPinnableReference())
+            fixed (char* pDescriptionWithNull = &descriptionWithNull.GetPinnableReference())
+            fixed (char* pDescriptionUrlWithNull = &descriptionUrlWithNull.GetPinnableReference())
+            {
+                var fileInfo = new SIGNER_FILE_INFO(pPathWithNull, default);
+                var subjectIndex = 0u;
+                var signerSubjectInfoUnion = new SIGNER_SUBJECT_INFO_UNION(&fileInfo);
+                var subjectInfo = new SIGNER_SUBJECT_INFO(&subjectIndex, SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE, signerSubjectInfoUnion);
+                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pwszName: pDescriptionWithNull, pwszInfo: pDescriptionUrlWithNull);
+                var storeInfo = new SIGNER_CERT_STORE_INFO(
+                    dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
+                    hCertStore: _certificateStore.Handle,
+                    pSigningCert: _configuration.PublicCertificate.Handle
+                );
+                var signerCert = new SIGNER_CERT(
+                    dwCertChoice: SignerCertChoice.SIGNER_CERT_STORE,
+                    union: new SIGNER_CERT_UNION(&storeInfo)
+                );
+                var signatureInfo = new SIGNER_SIGNATURE_INFO(
+                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
+                    psAuthenticated: IntPtr.Zero,
+                    psUnauthenticated: IntPtr.Zero,
+                    dwAttrChoice: SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
+                    attrAuthUnion: new SIGNER_SIGNATURE_INFO_UNION(&authCodeStructure)
+                );
+                var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
+                var signCallbackInfo = new SIGN_INFO(callbackPtr);
+
+
                 _logger.Log("Getting SIP Data", LogLevel.Verbose);
-                using (var data = SipExtensionFactory.GetSipData(path, flags, contextReceiver, timeStampFlags, storeInfo, timestampUrl,
-                    timestampAlgorithmOid, _signCallback, _configuration.FileDigestAlgorithm, fileInfo, attributes))
-                {
-                    _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
-                    return mssign32.SignerSignEx3
-                    (
-                        data.ModifyFlags(flags),
-                        data.SubjectInfoHandle,
-                        data.SignerCertHandle,
-                        data.SignatureInfoHandle,
-                        IntPtr.Zero,
-                        timeStampFlags,
-                        data.TimestampAlgorithmOidHandle,
-                        data.TimestampUrlHandle,
-                        IntPtr.Zero,
-                        data.SipDataHandle,
-                        contextReceiver.Handle,
-                        IntPtr.Zero,
-                        data.SignInfoHandle,
-                        IntPtr.Zero
-                    );
-                }
+                IntPtr context = default;
+                _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
+                return mssign32.SignerSignEx3
+                (
+                    flags, //TODO
+                    &subjectInfo,
+                    &signerCert,
+                    &signatureInfo,
+                    IntPtr.Zero,
+                    timeStampFlags,
+                    pTimestampAlgorithm,
+                    pTimestampUrlWithNull,
+                    IntPtr.Zero,
+                    IntPtr.Zero, //TODO
+                    &context,
+                    IntPtr.Zero,
+                    &signCallbackInfo,
+                    IntPtr.Zero
+                );
             }
         }
 
