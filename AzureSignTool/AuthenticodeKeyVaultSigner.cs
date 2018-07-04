@@ -2,7 +2,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 
 namespace AzureSignTool
 {
@@ -126,6 +125,7 @@ namespace AzureSignTool
 
 
                 _logger.Log("Getting SIP Data", LogLevel.Verbose);
+
                 IntPtr context = default;
                 _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
                 return mssign32.SignerSignEx3
