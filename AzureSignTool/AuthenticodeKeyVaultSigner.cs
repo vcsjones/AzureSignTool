@@ -80,31 +80,31 @@ namespace AzureSignTool
             }
 
             Span<char> pathWithNull = path.Length > 0x100 ? new char[path.Length + 1] : stackalloc char[path.Length + 1];
-            Span<char> descriptionWithNull = description.Length > 0x100 ? new char[description.Length + 1] : stackalloc char[description.Length + 1];
-            Span<char> descriptionUrlWithNull = descriptionUrl.Length > 0x100 ? new char[descriptionUrl.Length + 1] : stackalloc char[descriptionUrl.Length + 1];
-            Span<char> timestampUrlWithNull = timestampUrl == null ?
+            Span<char> descriptionBuffer = description.Length > 0x100 ? new char[description.Length + 1] : stackalloc char[description.Length + 1];
+            Span<char> descriptionUrlBuffer = descriptionUrl.Length > 0x100 ? new char[descriptionUrl.Length + 1] : stackalloc char[descriptionUrl.Length + 1];
+            Span<char> timestampUrlBuffer = timestampUrl == null ?
                 default : timestampUrl.Length > 0x100 ?
                 new char[timestampUrl.Length + 1] : stackalloc char[timestampUrl.Length + 1];
 
             CopyAndNullTerminate(path, pathWithNull);
-            CopyAndNullTerminate(description, descriptionWithNull);
-            CopyAndNullTerminate(descriptionUrl, descriptionUrlWithNull);
+            CopyAndNullTerminate(description, descriptionBuffer);
+            CopyAndNullTerminate(descriptionUrl, descriptionUrlBuffer);
             if (timestampUrl != null)
             {
-                CopyAndNullTerminate(timestampUrl, timestampUrlWithNull);
+                CopyAndNullTerminate(timestampUrl, timestampUrlBuffer);
             }
 
-            fixed (byte* pTimestampAlgorithm = &timestampAlgorithmOid.GetPinnableReference())
-            fixed (char* pTimestampUrlWithNull = &timestampUrlWithNull.GetPinnableReference())
-            fixed (char* pPathWithNull = &pathWithNull.GetPinnableReference())
-            fixed (char* pDescriptionWithNull = &descriptionWithNull.GetPinnableReference())
-            fixed (char* pDescriptionUrlWithNull = &descriptionUrlWithNull.GetPinnableReference())
+            fixed (byte* pTimestampAlgorithm = timestampAlgorithmOid)
+            fixed (char* pTimestampUrl = timestampUrlBuffer)
+            fixed (char* pPath = pathWithNull)
+            fixed (char* pDescription = descriptionBuffer)
+            fixed (char* pDescriptionUrl = descriptionUrlBuffer)
             {
-                var fileInfo = new SIGNER_FILE_INFO(pPathWithNull, default);
+                var fileInfo = new SIGNER_FILE_INFO(pPath, default);
                 var subjectIndex = 0u;
                 var signerSubjectInfoUnion = new SIGNER_SUBJECT_INFO_UNION(&fileInfo);
                 var subjectInfo = new SIGNER_SUBJECT_INFO(&subjectIndex, SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE, signerSubjectInfoUnion);
-                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pDescriptionWithNull, pDescriptionUrlWithNull);
+                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pDescription, pDescriptionUrl);
                 var storeInfo = new SIGNER_CERT_STORE_INFO(
                     dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
                     hCertStore: _certificateStore.Handle,
@@ -137,7 +137,7 @@ namespace AzureSignTool
                     IntPtr.Zero,
                     timeStampFlags,
                     pTimestampAlgorithm,
-                    pTimestampUrlWithNull,
+                    pTimestampUrl,
                     IntPtr.Zero,
                     IntPtr.Zero, //TODO
                     &context,
