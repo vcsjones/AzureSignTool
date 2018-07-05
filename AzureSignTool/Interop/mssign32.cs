@@ -17,7 +17,7 @@ namespace AzureSignTool.Interop
             [param: In] byte* pszTimestampAlgorithmOid,
             [param: In] char* pwszHttpTimeStamp,
             [param: In] IntPtr psRequest,
-            [param: In] IntPtr pSipData,
+            [param: In] void* pSipData,
             [param: In] IntPtr* ppSignerContext,
             [param: In] IntPtr pCryptoPolicy,
             [param: In] SIGN_INFO* pSignInfo,
@@ -226,19 +226,19 @@ namespace AzureSignTool.Interop
     }
 
     [type: StructLayout(LayoutKind.Sequential)]
-    internal struct SIGNER_SIGN_EX3_PARAMS
+    internal unsafe struct SIGNER_SIGN_EX3_PARAMS
     {
         public SignerSignEx3Flags dwFlags;
-        public IntPtr pSubjectInfo;
-        public IntPtr pSignerCert;
-        public IntPtr pSignatureInfo;
+        public SIGNER_SUBJECT_INFO* pSubjectInfo;
+        public SIGNER_CERT* pSignerCert;
+        public SIGNER_SIGNATURE_INFO* pSignatureInfo;
         public IntPtr pProviderInfo;
         public SignerSignTimeStampFlags dwTimestampFlags;
-        public IntPtr pszTimestampAlgorithmOid;
-        public IntPtr pwszHttpTimeStamp;
+        public byte* pszTimestampAlgorithmOid;
+        public char* pwszHttpTimeStamp;
         public IntPtr psRequest;
-        public IntPtr pSignCallBack;
-        public IntPtr ppSignerContext;
+        public SIGN_INFO* pSignCallBack;
+        public IntPtr* ppSignerContext;
         public IntPtr pCryptoPolicy;
         public IntPtr pReserved;
     }
@@ -246,7 +246,7 @@ namespace AzureSignTool.Interop
     [type: StructLayout(LayoutKind.Sequential)]
     internal struct APPX_SIP_CLIENT_DATA
     {
-        public IntPtr pSignerParams;
+        public unsafe SIGNER_SIGN_EX3_PARAMS* pSignerParams;
         public IntPtr pAppxSipState;
 
     }

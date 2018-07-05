@@ -1,5 +1,6 @@
 ﻿using AzureSignTool.Interop;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,6 +14,7 @@ namespace AzureSignTool
         private readonly X509Chain _chain;
         private readonly ILogger _logger;
         private readonly SignCallback _signCallback;
+        private IntPtr _callbackBufferPointer;
 
         public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates,
             ILogger logger)
@@ -123,14 +125,27 @@ namespace AzureSignTool
                 var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
                 var signCallbackInfo = new SIGN_INFO(callbackPtr);
 
-
                 _logger.Log("Getting SIP Data", LogLevel.Verbose);
+                var sipKind = SipExtensionFactory.GetSipKind(path);
+                void* sipData = (void*)0;
+                IntPtr context = IntPtr.Zero;
 
-                IntPtr context = default;
+                switch (sipKind)
+                {
+                    case SipKind.Appx:
+                        APPX_SIP_CLIENT_DATA clientData;
+                        SIGNER_SIGN_EX3_PARAMS parameters;
+                        clientData.pSignerParams = &parameters;
+                        sipData = &clientData;
+                        AppxSipExtension.FillExtension(ref flags, ref clientData, timeStampFlags,
+                                &subjectInfo, &signerCert, &signatureInfo, &context, pTimestampUrl, pTimestampAlgorithm, &signCallbackInfo);
+                        break;
+                }
+
                 _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
-                return mssign32.SignerSignEx3
+                var result = mssign32.SignerSignEx3
                 (
-                    flags, //TODO
+                    flags,
                     &subjectInfo,
                     &signerCert,
                     &signatureInfo,
@@ -139,12 +154,30 @@ namespace AzureSignTool
                     pTimestampAlgorithm,
                     pTimestampUrl,
                     IntPtr.Zero,
-                    IntPtr.Zero, //TODO
+                    sipData,
                     &context,
                     IntPtr.Zero,
                     &signCallbackInfo,
                     IntPtr.Zero
                 );
+                if (result == 0 && context != IntPtr.Zero)
+                {
+                    Debug.Assert(mssign32.SignerFreeSignerContext(context) == 0);
+                }
+                if (result == 0 && sipKind == SipKind.Appx)
+                {
+                    var state = ((APPX_SIP_CLIENT_DATA*)sipData)->pAppxSipState;
+                    if (state != IntPtr.Zero)
+                    {
+                        Marshal.Release(state);
+                    }
+                }
+                if (_callbackBufferPointer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_callbackBufferPointer);
+                    _callbackBufferPointer = IntPtr.Zero;
+                }
+                return result;
             }
         }
 
@@ -154,7 +187,7 @@ namespace AzureSignTool
             _certificateStore.Close();
         }
 
-        private int SignCallback(
+        private unsafe int SignCallback(
             IntPtr pCertContext,
             IntPtr pvExtra,
             uint algId,
@@ -166,9 +199,10 @@ namespace AzureSignTool
             _logger.Log("SignCallback", LogLevel.Verbose);
             var context = new KeyVaultSigningContext(_configuration, _logger);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
-            var resultPtr = Marshal.AllocHGlobal(result.Length);
-            Marshal.Copy(result, 0, resultPtr, result.Length);
-            blob.pbData = resultPtr;
+            _callbackBufferPointer = Marshal.AllocHGlobal(result.Length);
+            var resultBuffer = new Span<byte>((void*)_callbackBufferPointer, result.Length);
+            result.CopyTo(resultBuffer);
+            blob.pbData = _callbackBufferPointer;
             blob.cbData = (uint)result.Length;
             return 0;
         }
