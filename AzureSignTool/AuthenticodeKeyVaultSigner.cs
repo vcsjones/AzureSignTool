@@ -137,8 +137,9 @@ namespace AzureSignTool
                         SIGNER_SIGN_EX3_PARAMS parameters;
                         clientData.pSignerParams = &parameters;
                         sipData = &clientData;
-                        AppxSipExtension.FillExtension(ref flags, ref clientData, timeStampFlags,
-                                &subjectInfo, &signerCert, &signatureInfo, &context, pTimestampUrl, pTimestampAlgorithm, &signCallbackInfo);
+                        flags &= ~SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
+                        flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+                        FillAppxExtension(ref clientData, flags, timeStampFlags, &subjectInfo, &signerCert, &signatureInfo, &context, pTimestampUrl, pTimestampAlgorithm, &signCallbackInfo);
                         break;
                 }
 
@@ -205,6 +206,31 @@ namespace AzureSignTool
             blob.pbData = _callbackBufferPointer;
             blob.cbData = (uint)result.Length;
             return 0;
+        }
+
+        private static unsafe void FillAppxExtension(
+            ref APPX_SIP_CLIENT_DATA clientData,
+            SignerSignEx3Flags flags,
+            SignerSignTimeStampFlags timestampFlags,
+            SIGNER_SUBJECT_INFO* signerSubjectInfo,
+            SIGNER_CERT* signerCert,
+            SIGNER_SIGNATURE_INFO* signatureInfo,
+            IntPtr* signerContext,
+            char* timestampUrl,
+            byte* timestampOid,
+            SIGN_INFO* signInfo
+        )
+        {
+            clientData.pSignerParams->dwFlags = flags;
+            clientData.pSignerParams->dwTimestampFlags = timestampFlags;
+            clientData.pSignerParams->pSubjectInfo = signerSubjectInfo;
+            clientData.pSignerParams->pSignerCert = signerCert;
+            clientData.pSignerParams->pSignatureInfo = signatureInfo;
+            clientData.pSignerParams->ppSignerContext = signerContext;
+            clientData.pSignerParams->pwszHttpTimeStamp = timestampUrl;
+            clientData.pSignerParams->pszTimestampAlgorithmOid = timestampOid;
+            clientData.pSignerParams->pSignCallBack = signInfo;
+
         }
     }
 }
