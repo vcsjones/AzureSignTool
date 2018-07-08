@@ -3,11 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <LangVersion>latest</LangVersion>
     <VersionPrefix>2.0.0</VersionPrefix>
     <Authors>Kevin Jones</Authors>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>AzureSignTool.snk</AssemblyOriginatorKeyFile>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>
@@ -15,6 +12,8 @@
     <RepositoryUrl>https://github.com/vcsjones/AzureSignTool</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>azuresigntool;azure;keyvault;codesign</PackageTags>
+    <RuntimeIdentifiers>win10-x64;win-10-x86</RuntimeIdentifiers>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   
   <ItemGroup>
@@ -22,5 +21,6 @@
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.19.8" />
     <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.KeyVault.Cryptography" Version="3.0.0" />
+    <PackageReference Include="System.Memory" Version="4.5.1" />
   </ItemGroup>
 </Project>

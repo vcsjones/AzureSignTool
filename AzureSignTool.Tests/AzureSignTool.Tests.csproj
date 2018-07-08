@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <PlatformTarget>anycpu</PlatformTarget>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

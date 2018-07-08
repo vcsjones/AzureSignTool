@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "group": "build",
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/AzureSignTool/AzureSignTool.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
