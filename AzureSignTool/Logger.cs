@@ -1,12 +1,34 @@
 ﻿using System;
+using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace AzureSignTool
 {
-    public sealed class ConsoleLogger : ILogger
+    public sealed class TextWriterLogger : ILogger
     {
-        public LogLevel Level { get; set; } = LogLevel.Normal;
         private static object _sync = new object();
+        private readonly TextWriter _writer;
+        private readonly TextWriterLogger _parent;
+        private readonly int _scopeId = 0;
+        private int _nextChildScopeId = 0;
+        private readonly string _parentChain;
+
+        public LogLevel Level { get; set; } = LogLevel.Normal;
+
+        public TextWriterLogger(TextWriter writer)
+        {
+            _writer = writer;
+            _parentChain = string.Empty;
+        }
+
+        private TextWriterLogger(TextWriterLogger parent) : this(parent._writer)
+        {
+            _parent = parent;
+            _scopeId = Interlocked.Increment(ref parent._nextChildScopeId);
+            _parentChain = parent._parentChain + $"[{_scopeId}]";
+            Level = parent.Level;
+        }
 
         public void Dispose()
         {
@@ -18,48 +40,12 @@ namespace AzureSignTool
             {
                 lock (_sync)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+                    _writer.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]{_parentChain} {message}");
                 }
             }
         }
 
-        public ILogger Scoped() => new ScopedConsoleLogger(this);
-
-        private class ScopedConsoleLogger : ILogger
-        {
-            private ILogger _parent;
-            private static int _nextScopeId = 0;
-            private int _scopeId = Interlocked.Increment(ref _nextScopeId);
-
-            public ScopedConsoleLogger(ILogger parent)
-            {
-                _parent = parent;
-            }
-
-            public LogLevel Level
-            {
-                get => _parent.Level;
-                set => _parent.Level = value;
-            }
-
-            public void Dispose()
-            {
-                _parent.Dispose();
-            }
-
-            public void Log(string message, LogLevel level)
-            {
-                if (level <= Level)
-                {
-                    lock (_sync)
-                    {
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}][{_scopeId}] {message}");
-                    }
-                }
-            }
-
-            public ILogger Scoped() => _parent.Scoped();
-        }
+        public ILogger Scoped() => new TextWriterLogger(this);
 
     }
 
