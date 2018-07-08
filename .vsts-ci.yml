@@ -2,7 +2,7 @@ queue: Hosted VS2017
 variables: 
   BuildConfiguration: Release
 
-
+steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: test
