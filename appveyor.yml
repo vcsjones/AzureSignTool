@@ -1,0 +1,15 @@
+image: Visual Studio 2017
+
+before_build:
+  - cmd: dotnet build
+
+build_script:
+  - cmd: dotnet publish ./AzureSignTool/AzureSignTool.csproj
+
+before_test:
+  - cmd: dotnet build
+
+test_script:
+  - cmd: dotnet test AzureSignTool.Tests/AzureSignTool.Tests.csproj
+
+deploy: off
