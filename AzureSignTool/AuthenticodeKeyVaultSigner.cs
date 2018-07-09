@@ -14,7 +14,6 @@ namespace AzureSignTool
         private readonly X509Chain _chain;
         private readonly ILogger _logger;
         private readonly SignCallback _signCallback;
-        private IntPtr _callbackBufferPointer;
 
         public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates,
             ILogger logger)
@@ -173,11 +172,6 @@ namespace AzureSignTool
                         Marshal.Release(state);
                     }
                 }
-                if (_callbackBufferPointer != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(_callbackBufferPointer);
-                    _callbackBufferPointer = IntPtr.Zero;
-                }
                 return result;
             }
         }
@@ -200,10 +194,9 @@ namespace AzureSignTool
             _logger.Log("SignCallback", LogLevel.Verbose);
             var context = new KeyVaultSigningContext(_configuration, _logger);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
-            _callbackBufferPointer = Marshal.AllocHGlobal(result.Length);
-            var resultBuffer = new Span<byte>((void*)_callbackBufferPointer, result.Length);
-            result.CopyTo(resultBuffer);
-            blob.pbData = _callbackBufferPointer;
+            var resultPtr = Marshal.AllocHGlobal(result.Length);
+            Marshal.Copy(result, 0, resultPtr, result.Length);
+            blob.pbData = resultPtr;
             blob.cbData = (uint)result.Length;
             return 0;
         }
