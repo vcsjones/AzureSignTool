@@ -1,4 +1,5 @@
 ﻿using AzureSignTool.Interop;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -15,8 +16,7 @@ namespace AzureSignTool
         private readonly ILogger _logger;
         private readonly SignCallback _signCallback;
 
-        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates,
-            ILogger logger)
+        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates, ILogger logger)
         {
             _logger = logger;
             _timeStampConfiguration = timeStampConfiguration;
@@ -124,7 +124,7 @@ namespace AzureSignTool
                 var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
                 var signCallbackInfo = new SIGN_INFO(callbackPtr);
 
-                _logger.Log("Getting SIP Data", LogLevel.Verbose);
+                _logger.LogTrace("Getting SIP Data");
                 var sipKind = SipExtensionFactory.GetSipKind(path);
                 void* sipData = (void*)0;
                 IntPtr context = IntPtr.Zero;
@@ -142,7 +142,7 @@ namespace AzureSignTool
                         break;
                 }
 
-                _logger.Log("Calling SignerSignEx3", LogLevel.Verbose);
+                _logger.LogTrace("Calling SignerSignEx3");
                 var result = mssign32.SignerSignEx3
                 (
                     flags,
@@ -191,7 +191,7 @@ namespace AzureSignTool
             ref CRYPTOAPI_BLOB blob
         )
         {
-            _logger.Log("SignCallback", LogLevel.Verbose);
+            _logger.LogTrace("SignCallback");
             var context = new KeyVaultSigningContext(_configuration, _logger);
             var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
             var resultPtr = Marshal.AllocHGlobal(result.Length);

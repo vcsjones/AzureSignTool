@@ -1,0 +1,10 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug"
+    },
+    "Console": {
+      "IncludeScopes": "true"
+    }
+  }
+}
