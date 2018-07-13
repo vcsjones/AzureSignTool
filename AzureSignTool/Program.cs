@@ -22,7 +22,7 @@ namespace AzureSignTool
                 return E_PLATFORMNOTSUPPORTED;
             }
 
-            LoggerServiceLocator.Current = new ConsoleLogger();
+            LoggerServiceLocator.Current = new TextWriterLogger(Console.Out);
             var application = new CommandLineApplication(throwOnUnexpectedArg: false)
             {
                 Name = "azuresigntool",
