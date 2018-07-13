@@ -5,7 +5,9 @@ VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSignTool", "AzureSignTool\AzureSignTool.csproj", "{98E0A863-FE5E-452F-BF05-427F92915D24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSignTool.Tests", "AzureSignTool.Tests\AzureSignTool.Tests.csproj", "{44CE613A-8103-4AFC-8849-FD400B2B2A45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSignTool.Tests", "AzureSignTool.Tests\AzureSignTool.Tests.csproj", "{44CE613A-8103-4AFC-8849-FD400B2B2A45}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSignTool.Core", "AzureSignTool.Core\AzureSignTool.Core.csproj", "{60BA1D6E-A0B8-44EF-BBCF-F2A98B7BE383}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{44CE613A-8103-4AFC-8849-FD400B2B2A45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44CE613A-8103-4AFC-8849-FD400B2B2A45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44CE613A-8103-4AFC-8849-FD400B2B2A45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60BA1D6E-A0B8-44EF-BBCF-F2A98B7BE383}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60BA1D6E-A0B8-44EF-BBCF-F2A98B7BE383}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60BA1D6E-A0B8-44EF-BBCF-F2A98B7BE383}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60BA1D6E-A0B8-44EF-BBCF-F2A98B7BE383}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
