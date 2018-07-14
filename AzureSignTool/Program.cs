@@ -21,20 +21,17 @@ namespace AzureSignTool
     {
         static int Main(string[] args)
         {
-            var loggingConfiguration = new ConfigurationBuilder()
-                                       .SetBasePath(Path.GetDirectoryName(typeof(Program).Assembly.Location))
-                                       .AddJsonFile("logging.json", optional: false, reloadOnChange: true)
-                                       .Build();
-
             var maxLevel = LogLevel.Information;
 
             var serviceCollection = new ServiceCollection()
                 .AddLogging(builder =>
                 {
                     builder
-                        .AddConfiguration(loggingConfiguration.GetSection("Logging"))
-                        .AddConsole()
-                        .AddFilter(level => level >= maxLevel);
+                    .AddFilter(level => level >= maxLevel)
+                    .AddConsole(options =>
+                        {
+                            options.IncludeScopes = true;
+                        });
                         
                 });
 
