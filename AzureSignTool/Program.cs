@@ -84,9 +84,6 @@ namespace AzureSignTool
 
                 cfg.OnExecute(async () =>
                 {
-
-                    var itemScope = 0;
-
                     X509Certificate2Collection certificates;
 
                     switch (GetAdditionalCertificates(additionalCertificates.Values))
@@ -238,7 +235,7 @@ namespace AzureSignTool
                           }
                           var loopLogger = serviceProvider.GetRequiredService<ILogger<Program>>();
                            
-                          using (var loopScope = loopLogger.ItemIdScope(Interlocked.Increment(ref itemScope)))
+                          using (var loopScope = loopLogger.FileNameScope(filePath))
                           {
                               loopLogger.LogTrace("Creating Signer & building chain");
 

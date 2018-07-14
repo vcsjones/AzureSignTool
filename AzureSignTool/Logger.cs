@@ -20,14 +20,14 @@ namespace AzureSignTool
 
     internal static class LoggerExtensions
     {
-        private readonly static Func<ILogger, int, IDisposable> _itemScope;
+        private readonly static Func<ILogger, string, IDisposable> _itemScope;
 
         static LoggerExtensions()
         {
-            _itemScope = LoggerMessage.DefineScope<int>("Id:{Id}");
+            _itemScope = LoggerMessage.DefineScope<string>("File: {Id}");
         }
 
-        public static IDisposable ItemIdScope(this ILogger logger, int id) => _itemScope(logger, id);
+        public static IDisposable FileNameScope(this ILogger logger, string fileName) => _itemScope(logger, fileName);
     }
 
 
