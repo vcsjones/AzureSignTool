@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.CommandLineUtils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +7,12 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 using static AzureSignTool.HRESULT;
 
 namespace AzureSignTool
@@ -16,13 +21,34 @@ namespace AzureSignTool
     {
         static int Main(string[] args)
         {
+            var maxLevel = LogLevel.Information;
+
+            var serviceCollection = new ServiceCollection()
+                .AddLogging(builder =>
+                {
+                    builder
+                    .AddFilter(level => level >= maxLevel)
+                    .AddConsole(options =>
+                        {
+                            options.IncludeScopes = true;
+                        });
+                        
+                });
+
+            // providers may be added to a LoggerFactory before any loggers are created
+            
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+            LoggerServiceLocator.Current = logger;
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
                 return E_PLATFORMNOTSUPPORTED;
             }
 
-            LoggerServiceLocator.Current = new ConsoleLogger();
             var application = new CommandLineApplication(throwOnUnexpectedArg: false)
             {
                 Name = "azuresigntool",
@@ -59,16 +85,17 @@ namespace AzureSignTool
                 cfg.OnExecute(async () =>
                 {
                     X509Certificate2Collection certificates;
+
                     switch (GetAdditionalCertificates(additionalCertificates.Values))
                     {
                         case ErrorOr<X509Certificate2Collection>.Ok d:
                             certificates = d.Value;
                             break;
                         case ErrorOr<X509Certificate2Collection>.Err err:
-                            LoggerServiceLocator.Current.Log(err.Error.Message);
+                            LoggerServiceLocator.Current.LogError(err.Error, err.Error.Message);
                             return E_INVALIDARG;
                         default:
-                            LoggerServiceLocator.Current.Log("Failed to include additional certificates.");
+                            LoggerServiceLocator.Current.LogInformation("Failed to include additional certificates.");
                             return E_INVALIDARG;
                     }
 
@@ -79,11 +106,11 @@ namespace AzureSignTool
 
                     if (quiet.HasValue())
                     {
-                        LoggerServiceLocator.Current.Level = LogLevel.Quiet;
+                        maxLevel = LogLevel.Error;
                     }
                     else if (verbose.HasValue())
                     {
-                        LoggerServiceLocator.Current.Level = LogLevel.Verbose;
+                        maxLevel = LogLevel.Trace;
                     }
 
                     if (!CheckMutuallyExclusive(acTimeStamp, rfc3161TimeStamp) |
@@ -105,7 +132,7 @@ namespace AzureSignTool
                         }
                         else
                         {
-                            LoggerServiceLocator.Current.Log("Value specified for --max-degree-of-parallelism is not a valid value.");
+                            LoggerServiceLocator.Current.LogInformation("Value specified for --max-degree-of-parallelism is not a valid value.");
                             return E_INVALIDARG;
                         }
                     }
@@ -115,14 +142,14 @@ namespace AzureSignTool
                     {
                         if (!File.Exists(inputFileList.Value()))
                         {
-                            LoggerServiceLocator.Current.Log($"Input file list {inputFileList.Value()} does not exist.");
+                            LoggerServiceLocator.Current.LogInformation($"Input file list {inputFileList.Value()} does not exist.");
                             return E_INVALIDARG;
                         }
                         listOfFilesToSign.UnionWith(File.ReadAllLines(inputFileList.Value()).Where(s => !string.IsNullOrWhiteSpace(s)));
                     }
                     if (listOfFilesToSign.Count == 0)
                     {
-                        LoggerServiceLocator.Current.Log("File or list of files is required.");
+                        LoggerServiceLocator.Current.LogError("File or list of files is required.");
                         return E_INVALIDARG;
                     }
                     foreach (var filePath in listOfFilesToSign)
@@ -131,13 +158,13 @@ namespace AzureSignTool
                         {
                             if (!File.Exists(filePath))
                             {
-                                LoggerServiceLocator.Current.Log($"File {filePath} does not exist or does not have permission.");
+                                LoggerServiceLocator.Current.LogInformation($"File {filePath} does not exist or does not have permission.");
                                 return E_FILE_NOT_FOUND;
                             }
                         }
                         catch
                         {
-                            LoggerServiceLocator.Current.Log($"File {filePath} does not exist or does not have permission.");
+                            LoggerServiceLocator.Current.LogInformation($"File {filePath} does not exist or does not have permission.");
                             return E_FILE_NOT_FOUND;
                         }
                     }
@@ -178,7 +205,7 @@ namespace AzureSignTool
                             materialized = ok.Value;
                             break;
                         default:
-                            LoggerServiceLocator.Current.Log("Failed to get configuration from Azure Key Vault.");
+                            LoggerServiceLocator.Current.LogInformation("Failed to get configuration from Azure Key Vault.");
                             return E_INVALIDARG;
                     }
                     int failed = 0, succeeded = 0;
@@ -187,7 +214,7 @@ namespace AzureSignTool
                     {
                         e.Cancel = true;
                         cancellationSource.Cancel();
-                        LoggerServiceLocator.Current.Log("Cancelling signing operations.");
+                        LoggerServiceLocator.Current.LogInformation("Cancelling signing operations.");
                     };
                     using (materialized)
                     {
@@ -197,7 +224,7 @@ namespace AzureSignTool
                             options.MaxDegreeOfParallelism = signingConcurrency.Value;
                         }
                         Parallel.ForEach(listOfFilesToSign, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
-                      {
+                       {
                           if (cancellationSource.IsCancellationRequested)
                           {
                               pls.Stop();
@@ -206,44 +233,48 @@ namespace AzureSignTool
                           {
                               return state;
                           }
-                          using (var logger = LoggerServiceLocator.Current.Scoped())
+                          var loopLogger = serviceProvider.GetRequiredService<ILogger<Program>>();
+                           
+                          using (var loopScope = loopLogger.FileNameScope(filePath))
                           {
-                              logger.Log("Creating Signer & building chain", LogLevel.Verbose);
+                              loopLogger.LogTrace("Creating Signer & building chain");
 
-                              using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates, logger))
+                              using (var signer = new AuthenticodeKeyVaultSigner(materialized, timestampConfiguration, certificates, loopLogger))
                               {
-                                  logger.Log($"Signing file {filePath}");
+                                  loopLogger.LogInformation($"Signing file {filePath}");
                                   var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
                                   switch (result)
                                   {
                                       case COR_E_BADIMAGEFORMAT:
-                                          logger.Log($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
+                                          loopLogger.LogError($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
                                           break;
                                   }
+
                                   if (result == S_OK)
                                   {
-                                      logger.Log($"Signing completed successfully for file {filePath}.");
+                                      loopLogger.LogInformation($"Signing completed successfully for file {filePath}.");
                                       return (state.succeeded + 1, state.failed);
                                   }
                                   else
                                   {
-                                      logger.Log($"Signing failed with error {result:X2} for file {filePath}.");
+                                      loopLogger.LogError($"Signing failed with error {result:X2} for file {filePath}.");
                                       if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
                                       {
-                                          logger.Log("Stopping file signing.");
+                                          loopLogger.LogInformation("Stopping file signing.");
                                           pls.Stop();
                                       }
+
                                       return (state.succeeded, state.failed + 1);
                                   }
                               }
                           }
-                      }, result =>
+                       }, result =>
                       {
                           Interlocked.Add(ref failed, result.failed);
                           Interlocked.Add(ref succeeded, result.succeeded);
                       });
-                        LoggerServiceLocator.Current.Log($"Successful operations: {succeeded}");
-                        LoggerServiceLocator.Current.Log($"Failed operations: {failed}");
+                        LoggerServiceLocator.Current.LogInformation($"Successful operations: {succeeded}");
+                        LoggerServiceLocator.Current.LogInformation($"Failed operations: {failed}");
                         if (failed > 0 && succeeded == 0)
                         {
                             return E_ALL_FAILED;
@@ -301,7 +332,7 @@ namespace AzureSignTool
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
                             var certificate = new X509Certificate2(path);
-                            LoggerServiceLocator.Current.Log($"Including additional certificate {certificate.Thumbprint}.", LogLevel.Verbose);
+                            LoggerServiceLocator.Current.LogTrace($"Including additional certificate {certificate.Thumbprint}.");
                             collection.Add(certificate);
                             break;
                         default:
@@ -311,7 +342,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
-                LoggerServiceLocator.Current.Log($"An exception occured while including an additional certificate:\n{e}", LogLevel.Verbose);
+                LoggerServiceLocator.Current.LogTrace($"An exception occured while including an additional certificate:\n{e}");
                 return e;
             }
 
@@ -327,7 +358,7 @@ namespace AzureSignTool
             var set = new HashSet<string>(commands.Where(c => c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 1)
             {
-                LoggerServiceLocator.Current.Log($"Cannot use {String.Join(", ", set)} options together.");
+                LoggerServiceLocator.Current.LogError($"Cannot use {String.Join(", ", set)} options together.");
                 return false;
             }
             return true;
@@ -338,7 +369,7 @@ namespace AzureSignTool
             var set = new HashSet<string>(commands.Where(c => !c.HasValue()).Select(c => $"-{c.ShortName}"));
             if (set.Count > 0)
             {
-                LoggerServiceLocator.Current.Log($"Options {String.Join(", ", set)} are required.");
+                LoggerServiceLocator.Current.LogError($"Options {String.Join(", ", set)} are required.");
                 return false;
             }
             return true;

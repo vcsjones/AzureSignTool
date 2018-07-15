@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.KeyVault;
+using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -36,11 +37,11 @@ namespace AzureSignTool
 
         public async Task<byte[]> SignDigestAsync(byte[] digest)
         {
-            _logger.Log("Signing digest with key.", LogLevel.Verbose);
+            _logger.LogTrace("Signing digest with key.");
             var client = _configuration.Client;
             var algorithm = AlgorithmTranslator.SignatureAlgorithmToRsaJwsAlgId(_configuration.FileDigestAlgorithm);
             var signature = await client.SignAsync(_configuration.KeyId, algorithm, digest).ConfigureAwait(false);
-            _logger.Log("Signed digest with key.", LogLevel.Verbose);
+            _logger.LogTrace("Signed digest with key.");
             return signature.Result;
         }
 
