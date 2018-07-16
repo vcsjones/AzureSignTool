@@ -1,34 +1,58 @@
-﻿using AzureSignTool.Interop;
+﻿using AzureSign.Core.Interop;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace AzureSignTool
+namespace AzureSign.Core
 {
+    /// <summary>
+    /// Signs a file with an Authenticode signature.
+    /// </summary>
     public class AuthenticodeKeyVaultSigner : IDisposable
     {
-        private readonly AzureKeyVaultMaterializedConfiguration _configuration;
+        private readonly AsymmetricAlgorithm _signingAlgorithm;
+        private readonly X509Certificate2 _signingCertificate;
+        private readonly HashAlgorithmName _fileDigestAlgorithm;
         private readonly TimeStampConfiguration _timeStampConfiguration;
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
-        private readonly ILogger _logger;
         private readonly SignCallback _signCallback;
 
-        public AuthenticodeKeyVaultSigner(AzureKeyVaultMaterializedConfiguration configuration, TimeStampConfiguration timeStampConfiguration, X509Certificate2Collection additionalCertificates, ILogger logger)
+
+        /// <summary>
+        /// Creates a new instance of <see cref="AuthenticodeKeyVaultSigner" />.
+        /// </summary>
+        /// <param name="signingAlgorithm">
+        /// An instance of an asymmetric algorithm that will be used to sign. It must support signing with
+        /// a private key.
+        /// </param>
+        /// <param name="signingCertificate">The X509 public certificate for the <paramref name="signingAlgorithm"/>.</param>
+        /// <param name="fileDigestAlgorithm">The digest algorithm to sign the file.</param>
+        /// <param name="timeStampConfiguration">The timestamp configuration for timestamping the file. To omit timestamping,
+        /// use <see cref="TimeStampConfiguration.None"/>.</param>
+        /// <param name="additionalCertificates">Any additional certificates to assist in building a certificate chain.</param>
+        public AuthenticodeKeyVaultSigner(AsymmetricAlgorithm signingAlgorithm, X509Certificate2 signingCertificate,
+            HashAlgorithmName fileDigestAlgorithm, TimeStampConfiguration timeStampConfiguration,
+            X509Certificate2Collection additionalCertificates = null)
         {
-            _logger = logger;
+            _fileDigestAlgorithm = fileDigestAlgorithm;
+            _signingCertificate = signingCertificate;
             _timeStampConfiguration = timeStampConfiguration;
-            _configuration = configuration;
+            _signingAlgorithm = signingAlgorithm;
             _certificateStore = MemoryCertificateStore.Create();
             _chain = new X509Chain();
-            _chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+            if (additionalCertificates != null)
+            {
+                _chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+            }
             //We don't care about the trustworthiness of the cert. We just want a chain to sign with.
             _chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
 
 
-            if (!_chain.Build(_configuration.PublicCertificate))
+            if (!_chain.Build(signingCertificate))
             {
                 throw new InvalidOperationException("Failed to build chain for certificate.");
             }
@@ -39,7 +63,8 @@ namespace AzureSignTool
             _signCallback = SignCallback;
         }
 
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing)
+        /// <param name="logger">An optional logger to capture signing operations.</param>
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger logger = null)
         {
             void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
             {
@@ -108,14 +133,14 @@ namespace AzureSignTool
                 var storeInfo = new SIGNER_CERT_STORE_INFO(
                     dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
                     hCertStore: _certificateStore.Handle,
-                    pSigningCert: _configuration.PublicCertificate.Handle
+                    pSigningCert: _signingCertificate.Handle
                 );
                 var signerCert = new SIGNER_CERT(
                     dwCertChoice: SignerCertChoice.SIGNER_CERT_STORE,
                     union: new SIGNER_CERT_UNION(&storeInfo)
                 );
                 var signatureInfo = new SIGNER_SIGNATURE_INFO(
-                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_configuration.FileDigestAlgorithm),
+                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_fileDigestAlgorithm),
                     psAuthenticated: IntPtr.Zero,
                     psUnauthenticated: IntPtr.Zero,
                     dwAttrChoice: SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
@@ -124,7 +149,7 @@ namespace AzureSignTool
                 var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
                 var signCallbackInfo = new SIGN_INFO(callbackPtr);
 
-                _logger.LogTrace("Getting SIP Data");
+                logger?.LogTrace("Getting SIP Data");
                 var sipKind = SipExtensionFactory.GetSipKind(path);
                 void* sipData = (void*)0;
                 IntPtr context = IntPtr.Zero;
@@ -142,7 +167,7 @@ namespace AzureSignTool
                         break;
                 }
 
-                _logger.LogTrace("Calling SignerSignEx3");
+                logger?.LogTrace("Calling SignerSignEx3");
                 var result = mssign32.SignerSignEx3
                 (
                     flags,
@@ -191,13 +216,23 @@ namespace AzureSignTool
             ref CRYPTOAPI_BLOB blob
         )
         {
-            _logger.LogTrace("SignCallback");
-            var context = new KeyVaultSigningContext(_configuration, _logger);
-            var result = context.SignDigestAsync(pDigestToSign).ConfigureAwait(false).GetAwaiter().GetResult();
-            var resultPtr = Marshal.AllocHGlobal(result.Length);
-            Marshal.Copy(result, 0, resultPtr, result.Length);
+            const int E_INVALIDARG = unchecked((int)0x80070057);
+            byte[] digest;
+            switch (_signingAlgorithm)
+            {
+                case RSA rsa:
+                    digest = rsa.SignHash(pDigestToSign, _fileDigestAlgorithm, RSASignaturePadding.Pkcs1);
+                    break;
+                case ECDsa ecdsa:
+                    digest = ecdsa.SignHash(pDigestToSign);
+                    break;
+                default:
+                    return E_INVALIDARG;
+            }
+            var resultPtr = Marshal.AllocHGlobal(digest.Length);
+            Marshal.Copy(digest, 0, resultPtr, digest.Length);
             blob.pbData = resultPtr;
-            blob.cbData = (uint)result.Length;
+            blob.cbData = (uint)digest.Length;
             return 0;
         }
 

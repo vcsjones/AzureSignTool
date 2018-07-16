@@ -6,6 +6,6 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: test
-    projects: AzureSignTool.Tests/AzureSignTool.Tests.csproj
+    projects: test/AzureSign.Core.Tests/AzureSign.Core.Tests.csproj
     arguments: -c $(BuildConfiguration)
   displayName: Run Tests

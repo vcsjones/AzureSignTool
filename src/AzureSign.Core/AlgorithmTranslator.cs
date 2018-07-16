@@ -1,22 +1,10 @@
 ﻿using System;
 using System.Security.Cryptography;
 
-namespace AzureSignTool
+namespace AzureSign.Core
 {
     internal static class AlgorithmTranslator
     {
-        public static string SignatureAlgorithmToRsaJwsAlgId(HashAlgorithmName hashAlgorithmName)
-        {
-                if (hashAlgorithmName.Name == HashAlgorithmName.SHA256.Name)
-                    return "RS256";
-                if (hashAlgorithmName.Name == HashAlgorithmName.SHA384.Name)
-                    return "RS384";
-                if (hashAlgorithmName.Name == HashAlgorithmName.SHA512.Name)
-                    return "RS512";
-                throw new NotSupportedException("The algorithm specified is not supported.");
-
-        }
-
         public static uint HashAlgorithmToAlgId(HashAlgorithmName hashAlgorithmName)
         {
             if (hashAlgorithmName.Name == HashAlgorithmName.SHA256.Name)

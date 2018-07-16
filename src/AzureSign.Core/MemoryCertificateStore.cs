@@ -1,11 +1,11 @@
-﻿using AzureSignTool.Interop;
+﻿using AzureSign.Core.Interop;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
-namespace AzureSignTool
+namespace AzureSign.Core
 {
-    public sealed class MemoryCertificateStore : IDisposable
+    internal sealed class MemoryCertificateStore : IDisposable
     {
         private IntPtr _handle;
         private X509Store _store;

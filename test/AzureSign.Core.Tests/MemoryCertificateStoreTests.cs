@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
+using AzureSign.Core;
 
 namespace AzureSignTool.Tests
 {
