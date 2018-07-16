@@ -32,7 +32,7 @@ steps:
   inputs:
     command: test
     projects: '**/*.Tests.csproj'
-    arguments: -c $(BuildConfiguration) --collect:"Code Coverage" -s $(System.DefaultWorkingDirectory)CodeCoverage.runsettings
+    arguments: -c $(BuildConfiguration) --collect:"Code Coverage" -s $(System.DefaultWorkingDirectory)\CodeCoverage.runsettings
   displayName: Run Tests
     
 - task: PublishBuildArtifacts@1
