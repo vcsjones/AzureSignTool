@@ -13,7 +13,6 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>azuresigntool;azure;keyvault;codesign</PackageTags>
     <RuntimeIdentifiers>win10-x64;win-10-x86</RuntimeIdentifiers>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   
   <ItemGroup>
@@ -24,5 +23,10 @@
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.19.8" />
     <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.KeyVault.Cryptography" Version="3.0.0" />
+    <PackageReference Include="RSAKeyVaultProvider" Version="1.0.1" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\AzureSign.Core\AzureSign.Core.csproj" />
   </ItemGroup>
 </Project>

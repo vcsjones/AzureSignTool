@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace AzureSignTool
+namespace AzureSign.Core
 {
     internal enum SipKind
     {

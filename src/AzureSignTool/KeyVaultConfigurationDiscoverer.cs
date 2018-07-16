@@ -8,9 +8,16 @@ using System.Threading.Tasks;
 
 namespace AzureSignTool
 {
-    internal static class KeyVaultConfigurationDiscoverer
+    internal class KeyVaultConfigurationDiscoverer
     {
-        public static async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
+        private readonly ILogger _logger;
+
+        public KeyVaultConfigurationDiscoverer(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
         {
             var authenticationFailure = false;
             async Task<string> Authenticate(string authority, string resource, string scope)
@@ -25,15 +32,15 @@ namespace AzureSignTool
 
                 try
                 {
-                    LoggerServiceLocator.Current.LogTrace("Acquiring access token from client id");
+                    _logger.LogTrace("Acquiring access token from client id");
                     var result = await context.AcquireTokenAsync(resource, credential);
-                    LoggerServiceLocator.Current.LogTrace("Acquired access token from client id");
+                    _logger.LogTrace("Acquired access token from client id");
                     return result.AccessToken;
                 }
                 catch (AdalServiceException e) when (e.StatusCode >= 400 && e.StatusCode < 500)
                 {
                     authenticationFailure = true;
-                    LoggerServiceLocator.Current.LogError("Failed to authenticate to Azure Key Vault. Please check credentials.");
+                    _logger.LogError("Failed to authenticate to Azure Key Vault. Please check credentials.");
                     return null;
                 }
             }
@@ -44,9 +51,9 @@ namespace AzureSignTool
             CertificateBundle azureCertificate;
             try
             {
-                LoggerServiceLocator.Current.LogTrace($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.");
+                _logger.LogTrace($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.");
                 azureCertificate = await vault.GetCertificateAsync(configuration.AzureKeyVaultUrl, configuration.AzureKeyVaultCertificateName);
-                LoggerServiceLocator.Current.LogTrace($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.");
+                _logger.LogTrace($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.");
                 
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
@@ -54,12 +61,12 @@ namespace AzureSignTool
             {
                 if (!authenticationFailure)
                 {
-                    LoggerServiceLocator.Current.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
+                    _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
                 }
                 return e;
             }
             var keyId = azureCertificate.KeyIdentifier;
-            return new AzureKeyVaultMaterializedConfiguration(vault, certificate, keyId.Identifier, configuration.FileDigestAlgorithm);
+            return new AzureKeyVaultMaterializedConfiguration(vault, certificate, keyId);
 
         }
     }

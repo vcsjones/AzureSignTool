@@ -1,6 +1,6 @@
 ﻿namespace AzureSignTool
 {
-    public static class HRESULT
+    internal static class HRESULT
     {
         public const int S_OK = 0;
         public const int E_INVALIDARG = unchecked((int)0x80070057);

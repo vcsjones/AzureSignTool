@@ -1,6 +1,4 @@
 ﻿
-using Crypto = System.Security.Cryptography;
-
 namespace AzureSignTool
 {
     public sealed class AzureKeyVaultSignConfigurationSet
@@ -10,8 +8,5 @@ namespace AzureSignTool
         public string AzureKeyVaultUrl { get; set; }
         public string AzureKeyVaultCertificateName { get; set; }
         public string AzureAccessToken { get; set; }
-
-        public Crypto.HashAlgorithmName FileDigestAlgorithm { get; set; }
-        public Crypto.HashAlgorithmName PkcsDigestAlgorithm { get; set; }
     }
 }
