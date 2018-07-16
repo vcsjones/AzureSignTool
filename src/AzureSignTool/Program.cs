@@ -232,63 +232,56 @@ namespace AzureSignTool
                     {
                         options.MaxDegreeOfParallelism = signingConcurrency.Value;
                     }
-                    Parallel.ForEach(listOfFilesToSign, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
-                   {
-                       if (cancellationSource.IsCancellationRequested)
-                       {
-                           pls.Stop();
-                       }
-                       if (pls.IsStopped)
-                       {
-                           return state;
-                       }
-                       var loopLogger = serviceProvider.GetRequiredService<ILogger<Program>>();
+                    logger.LogTrace("Creating context");
+                    var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
+                    using (var keyVault = new RSAKeyVault(context))
+                    using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, digestAlgorithm, timeStampConfiguration, certificates))
+                    {
+                        Parallel.ForEach(listOfFilesToSign, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                        {
+                            if (cancellationSource.IsCancellationRequested)
+                            {
+                                pls.Stop();
+                            }
+                            if (pls.IsStopped)
+                            {
+                                return state;
+                            }
+                            var loopLogger = serviceProvider.GetRequiredService<ILogger<Program>>();
+                            using (var loopScope = loopLogger.FileNameScope(filePath))
+                            {
+                                loopLogger.LogInformation($"Signing file {filePath}");
+                                var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing, loopLogger);
+                                switch (result)
+                                {
+                                    case COR_E_BADIMAGEFORMAT:
+                                        loopLogger.LogError($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
+                                        break;
+                                }
 
-                       using (var loopScope = loopLogger.FileNameScope(filePath))
-                       {
-                           loopLogger.LogTrace("Creating Signer & building chain");
-                           var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
-                           using (var keyVault = new RSAKeyVault(context))
-                           using (var signer = new AuthenticodeKeyVaultSigner(
-                               keyVault,
-                               materialized.PublicCertificate,
-                               digestAlgorithm,
-                               timeStampConfiguration,
-                               certificates,
-                               loopLogger))
-                           {
-                               loopLogger.LogInformation($"Signing file {filePath}");
-                               var result = signer.SignFile(filePath, description.Value(), descriptionUrl.Value(), performPageHashing);
-                               switch (result)
-                               {
-                                   case COR_E_BADIMAGEFORMAT:
-                                       loopLogger.LogError($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
-                                       break;
-                               }
+                                if (result == S_OK)
+                                {
+                                    loopLogger.LogInformation($"Signing completed successfully for file {filePath}.");
+                                    return (state.succeeded + 1, state.failed);
+                                }
+                                else
+                                {
+                                    loopLogger.LogError($"Signing failed with error {result:X2} for file {filePath}.");
+                                    if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
+                                    {
+                                        loopLogger.LogInformation("Stopping file signing.");
+                                        pls.Stop();
+                                    }
 
-                               if (result == S_OK)
-                               {
-                                   loopLogger.LogInformation($"Signing completed successfully for file {filePath}.");
-                                   return (state.succeeded + 1, state.failed);
-                               }
-                               else
-                               {
-                                   loopLogger.LogError($"Signing failed with error {result:X2} for file {filePath}.");
-                                   if (!continueOnError.HasValue() || listOfFilesToSign.Count == 1)
-                                   {
-                                       loopLogger.LogInformation("Stopping file signing.");
-                                       pls.Stop();
-                                   }
-
-                                   return (state.succeeded, state.failed + 1);
-                               }
-                           }
-                       }
-                   }, result =>
-                  {
-                      Interlocked.Add(ref failed, result.failed);
-                      Interlocked.Add(ref succeeded, result.succeeded);
-                  });
+                                    return (state.succeeded, state.failed + 1);
+                                }
+                            }
+                        }, result =>
+                        {
+                           Interlocked.Add(ref failed, result.failed);
+                           Interlocked.Add(ref succeeded, result.succeeded);
+                       });
+                    }
                     logger.LogInformation($"Successful operations: {succeeded}");
                     logger.LogInformation($"Failed operations: {failed}");
                     if (failed > 0 && succeeded == 0)

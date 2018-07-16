@@ -19,7 +19,6 @@ namespace AzureSign.Core
         private readonly TimeStampConfiguration _timeStampConfiguration;
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
-        private readonly ILogger _logger;
         private readonly SignCallback _signCallback;
 
 
@@ -35,12 +34,10 @@ namespace AzureSign.Core
         /// <param name="timeStampConfiguration">The timestamp configuration for timestamping the file. To omit timestamping,
         /// use <see cref="TimeStampConfiguration.None"/>.</param>
         /// <param name="additionalCertificates">Any additional certificates to assist in building a certificate chain.</param>
-        /// <param name="logger">An optional logger to capture signing operations.</param>
         public AuthenticodeKeyVaultSigner(AsymmetricAlgorithm signingAlgorithm, X509Certificate2 signingCertificate,
             HashAlgorithmName fileDigestAlgorithm, TimeStampConfiguration timeStampConfiguration,
-            X509Certificate2Collection additionalCertificates = null, ILogger logger = null)
+            X509Certificate2Collection additionalCertificates = null)
         {
-            _logger = logger;
             _fileDigestAlgorithm = fileDigestAlgorithm;
             _signingCertificate = signingCertificate;
             _timeStampConfiguration = timeStampConfiguration;
@@ -66,7 +63,8 @@ namespace AzureSign.Core
             _signCallback = SignCallback;
         }
 
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing)
+        /// <param name="logger">An optional logger to capture signing operations.</param>
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger logger = null)
         {
             void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
             {
@@ -151,7 +149,7 @@ namespace AzureSign.Core
                 var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
                 var signCallbackInfo = new SIGN_INFO(callbackPtr);
 
-                _logger?.LogTrace("Getting SIP Data");
+                logger?.LogTrace("Getting SIP Data");
                 var sipKind = SipExtensionFactory.GetSipKind(path);
                 void* sipData = (void*)0;
                 IntPtr context = IntPtr.Zero;
@@ -169,7 +167,7 @@ namespace AzureSign.Core
                         break;
                 }
 
-                _logger?.LogTrace("Calling SignerSignEx3");
+                logger?.LogTrace("Calling SignerSignEx3");
                 var result = mssign32.SignerSignEx3
                 (
                     flags,
@@ -219,7 +217,6 @@ namespace AzureSign.Core
         )
         {
             const int E_INVALIDARG = unchecked((int)0x80070057);
-            _logger?.LogTrace("SignCallback");
             byte[] digest;
             switch (_signingAlgorithm)
             {
