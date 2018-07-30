@@ -40,7 +40,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--azure-key-vault-certificate` [short: `-kvc`, required: yes]: The name of the certificate used to perform the signing
 	operation.
 
-* `--azure-key-vault-accesstoken` [short: `-kvs`, required: possibly]: An access token used to authenticate to Azure. This
+* `--azure-key-vault-accesstoken` [short: `-kva`, required: possibly]: An access token used to authenticate to Azure. This
 	can be used instead of the `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
 	if AzureSignTool is being used as part of another program that is already authenticated and has an access token to
 	Azure.
