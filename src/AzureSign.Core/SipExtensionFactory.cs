@@ -30,6 +30,22 @@ namespace AzureSign.Core
             {
                 return SipKind.Appx;
             }
+            if (extension.Equals(".msix", StringComparison.OrdinalIgnoreCase))
+            {
+                return SipKind.Appx;
+            }
+            if (extension.Equals(".emsix", StringComparison.OrdinalIgnoreCase))
+            {
+                return SipKind.Appx;
+            }
+            if (extension.Equals(".msixbundle", StringComparison.OrdinalIgnoreCase))
+            {
+                return SipKind.Appx;
+            }
+            if (extension.Equals(".emsixbundle", StringComparison.OrdinalIgnoreCase))
+            {
+                return SipKind.Appx;
+            }
             return SipKind.None;
         }
     }
