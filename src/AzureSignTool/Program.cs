@@ -233,6 +233,10 @@ namespace AzureSignTool
                         options.MaxDegreeOfParallelism = signingConcurrency.Value;
                     }
                     logger.LogTrace("Creating context");
+
+                    // Load our local wintrust so that it uses our appxsip.dll
+                    Kernel32.LoadLibraryEx("wintrust.dll", IntPtr.Zero, Kernel32.LoadLibraryFlags.LOAD_LIBRARY_SEARCH_APPLICATION_DIR | Kernel32.LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+
                     var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
                     using (var keyVault = new RSAKeyVault(context))
                     using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, digestAlgorithm, timeStampConfiguration, certificates))
