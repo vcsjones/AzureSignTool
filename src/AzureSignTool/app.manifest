@@ -10,7 +10,7 @@
   </trustInfo>
 
     <assemblyIdentity
-        name=" "
+        name="AzureSignTool"
         version="0.0.0.0"
     />
 
