@@ -12,11 +12,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.vsts-ci.yml = .vsts-ci.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSign.Core.Tests", "test\AzureSign.Core.Tests\AzureSign.Core.Tests.csproj", "{66894D4A-56C9-47E8-9368-C2CC9D7363F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSign.Core.Tests", "test\AzureSign.Core.Tests\AzureSign.Core.Tests.csproj", "{66894D4A-56C9-47E8-9368-C2CC9D7363F5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{705BE9C7-3306-4B06-9668-2643131991C8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{800D5449-F840-43E6-9559-28EB45AEA60B}"
+	ProjectSection(SolutionItems) = preProject
+		src\AzureSignTool\LoggerExtensions.cs = src\AzureSignTool\LoggerExtensions.cs
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

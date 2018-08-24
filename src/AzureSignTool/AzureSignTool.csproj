@@ -6,8 +6,41 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>    
-    <RuntimeIdentifiers>win10-x64;win-10-x86</RuntimeIdentifiers>
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>2.1.3</RuntimeFrameworkVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <WinSdk17733BinDir>$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.17733.0\</WinSdk17733BinDir>
+    <WinSdk17134BinDir>$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.17134.0\</WinSdk17134BinDir>
+    <WinSdk16299BinDir>$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.16299.0\</WinSdk16299BinDir>
+    <WinSdk15063BinDir>$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.15063.0\</WinSdk15063BinDir>
+    <WinSdk14393BinDir>$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.14393.0\</WinSdk14393BinDir>
+
+    <ProbingFile>makeappx.exe</ProbingFile>
+
+    <WinSdkBinDir Condition="'$(WinSdkBinDir)' == '' and Exists('$(WinSdk17733BinDir)x64\$(ProbingFile)')">$(WinSdk17733BinDir)</WinSdkBinDir>
+    <WinSdkBinDir Condition="'$(WinSdkBinDir)' == '' and Exists('$(WinSdk17134BinDir)x64\$(ProbingFile)')">$(WinSdk17134BinDir)</WinSdkBinDir>
+    <WinSdkBinDir Condition="'$(WinSdkBinDir)' == '' and Exists('$(WinSdk16299BinDir)x64\$(ProbingFile)')">$(WinSdk16299BinDir)</WinSdkBinDir>
+    <WinSdkBinDir Condition="'$(WinSdkBinDir)' == '' and Exists('$(WinSdk15063BinDir)x64\$(ProbingFile)')">$(WinSdk15063BinDir)</WinSdkBinDir>
+    <WinSdkBinDir Condition="'$(WinSdkBinDir)' == '' and Exists('$(WinSdk14393BinDir)x64\$(ProbingFile)')">$(WinSdk14393BinDir)</WinSdkBinDir>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(WinSdkBinDir)x64\appxsip.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(WinSdkBinDir)x64\appxpackaging.dll" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\opcservices.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(WinSdkBinDir)x64\Microsoft.Windows.Build.Appx.AppxPackaging.dll.manifest" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\Microsoft.Windows.Build.Appx.AppxSip.dll.manifest" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\Microsoft.Windows.Build.Appx.OpcServices.dll.manifest" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\Microsoft.Windows.Build.Signing.mssign32.dll.manifest" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\Microsoft.Windows.Build.Signing.wintrust.dll.manifest" CopyToOutputDirectory="PreserveNewest"/>    
+    <Content Include="$(WinSdkBinDir)x64\mssign32.dll" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\wintrust.dll" CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="$(WinSdkBinDir)x64\wintrust.dll.ini" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+  
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
@@ -23,4 +56,13 @@
   <ItemGroup>
     <ProjectReference Include="..\AzureSign.Core\AzureSign.Core.csproj" />
   </ItemGroup>
+
+  <Target Name="UpdateManifestWithRealOne" AfterTargets="_ComputeNETCoreBuildOutputFiles" BeforeTargets="AssignTargetPaths" Condition="'$(ComputeNETCoreBuildOutputFiles)' == 'true'">
+    <PropertyGroup>
+      <MtCmd>"$(WinSdkBinDir)x64\mt.exe" -nologo -manifest app.manifest -outputresource:@(NativeAppHostNETCore);#1</MtCmd>
+    </PropertyGroup>
+
+    <Exec Command="$(MtCmd)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+  </Target>
+  
 </Project>

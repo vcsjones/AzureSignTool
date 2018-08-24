@@ -4,8 +4,9 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <Description>Authenticode signing library.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <RuntimeIdentifiers>win10-x64;win-10-x86</RuntimeIdentifiers>
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RuntimeFrameworkVersion>2.1.3</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
