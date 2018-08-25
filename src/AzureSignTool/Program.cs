@@ -234,8 +234,14 @@ namespace AzureSignTool
                     }
                     logger.LogTrace("Creating context");
 
-                    // Load our local wintrust so that it uses our appxsip.dll
-                    Kernel32.LoadLibraryEx("wintrust.dll", IntPtr.Zero, Kernel32.LoadLibraryFlags.LOAD_LIBRARY_SEARCH_APPLICATION_DIR | Kernel32.LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+                    //
+                    // Ensure we invoke wintrust!DllMain before we begin.
+                    // We're not particularly interested in loading the library but rather
+                    // invoking the wintrust!RegisterSipsFromIniFile backdoor. This function
+                    // reads in wintrust.dll.ini and overrides some early calls to let us
+                    // swap in replacements.
+                    //
+                    Kernel32.LoadLibraryW("wintrust.dll");
 
                     var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
                     using (var keyVault = new RSAKeyVault(context))
