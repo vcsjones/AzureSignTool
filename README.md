@@ -1,6 +1,8 @@
 Azure Sign Tool
 ===============
 
+[![Build Status](https://vcsjones.visualstudio.com/AzureSignTool/_apis/build/status/AzureSignTool-CI)](https://vcsjones.visualstudio.com/AzureSignTool/_build/latest?definitionId=1)
+
 Azure Sign Tool is similar to `signtool` in the Windows SDK, with the major difference being that it uses
 Azure Key Vault for performing the signing process. The usage is like `signtool`, except with a limited set
 of options for signing and options for authenticating to Azure Key Vault.
