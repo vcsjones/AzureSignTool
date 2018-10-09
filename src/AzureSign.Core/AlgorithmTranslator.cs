@@ -7,6 +7,8 @@ namespace AzureSign.Core
     {
         public static uint HashAlgorithmToAlgId(HashAlgorithmName hashAlgorithmName)
         {
+            if (hashAlgorithmName.Name == HashAlgorithmName.SHA1.Name)
+                return 0x00008004;
             if (hashAlgorithmName.Name == HashAlgorithmName.SHA256.Name)
                 return 0x0000800c;
             if (hashAlgorithmName.Name == HashAlgorithmName.SHA384.Name)

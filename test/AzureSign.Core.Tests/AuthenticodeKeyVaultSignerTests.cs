@@ -17,6 +17,18 @@ namespace AzureSign.Core.Tests
             _scratchDirectory = Directory.CreateDirectory(directory);
         }
 
+
+        [Theory]
+        [MemberData(nameof(RsaCertificates))]
+        public void ShouldSignExeWithRSASigningCertificates_Sha1FileDigest(string certificate)
+        {
+            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA1, TimeStampConfiguration.None);
+            var fileToSign = GetFileToSign();
+            var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+        }
+
         [Theory]
         [MemberData(nameof(RsaCertificates))]
         public void ShouldSignExeWithRSASigningCertificates_Sha256FileDigest(string certificate)
