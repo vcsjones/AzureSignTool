@@ -72,6 +72,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 * `--file-digest` [short: `-fd`, required: no]: The name of the digest algorithm used for hashing the file being signed.  The default
  	value is `sha256`. Possible values:
+	* sha1
 	* sha256
 	* sha384
 	* sha512
