@@ -57,6 +57,7 @@ namespace AzureSign.Core.Tests
         {
             get
             {
+                yield return new object[] { HashAlgorithmName.SHA1, 0x00008004 };
                 yield return new object[] { HashAlgorithmName.SHA256, 0x0000800c };
                 yield return new object[] { HashAlgorithmName.SHA384, 0x0000800d };
                 yield return new object[] { HashAlgorithmName.SHA512, 0x0000800e };
