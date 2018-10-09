@@ -3,7 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using Xunit;
 using AzureSign.Core;
 
-namespace AzureSignTool.Tests
+namespace AzureSign.Core.Tests
 {
     public class MemoryCertificateStoreTests
     {
