@@ -39,9 +39,9 @@ namespace AzureSign.Core
             X509Certificate2Collection additionalCertificates = null)
         {
             _fileDigestAlgorithm = fileDigestAlgorithm;
-            _signingCertificate = signingCertificate;
-            _timeStampConfiguration = timeStampConfiguration;
-            _signingAlgorithm = signingAlgorithm;
+            _signingCertificate = signingCertificate ?? throw new ArgumentNullException(nameof(signingCertificate));
+            _timeStampConfiguration = timeStampConfiguration ?? throw new ArgumentNullException(nameof(timeStampConfiguration));
+            _signingAlgorithm = signingAlgorithm ?? throw new ArgumentNullException(nameof(signingAlgorithm));
             _certificateStore = MemoryCertificateStore.Create();
             _chain = new X509Chain();
             if (additionalCertificates != null)
