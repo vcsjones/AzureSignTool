@@ -283,7 +283,8 @@ namespace AzureSign.Core
         /// It is required to call initialize before using the AzureSign to ensure dll's are loaded correctly.
         /// The initialize should happen as early as possible in the host process.
         /// </summary>
-        public static void Initialize()
+        /// <param name="assemblyPath">Override the default location for the assembly. Necessary when running on Azure App Services</param>
+        public static void Initialize(string assemblyPath = null)
         {
             if (ManifestLocation != null)
                 return; // already initialized
@@ -291,8 +292,11 @@ namespace AzureSign.Core
 
             var is64bit = IntPtr.Size == 8;
 
-            // the directory should be next to the assembly where this type is.
-            var assemblyPath = Path.GetDirectoryName(typeof(AuthenticodeKeyVaultSigner).Assembly.Location);
+            if(string.IsNullOrWhiteSpace(assemblyPath))
+            {
+                // the directory should be next to the assembly where this type is.
+                assemblyPath = Path.GetDirectoryName(typeof(AuthenticodeKeyVaultSigner).Assembly.Location);
+            }            
 
             var basePath = Path.Combine(assemblyPath, is64bit ? "x64" : "x86");
             ManifestLocation = Path.Combine(assemblyPath, is64bit ? "x64" : "x86", "SignTool.exe.manifest");
