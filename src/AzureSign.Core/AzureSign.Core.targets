@@ -1,0 +1,6 @@
+﻿<Project>
+  <ItemGroup>
+    <ReferenceCopyLocalPaths Include="$(MSBuildThisFileDirectory)x64\**" DestinationSubDirectory="x64\" Visible="false" />
+    <ReferenceCopyLocalPaths Include="$(MSBuildThisFileDirectory)x86\**" DestinationSubDirectory="x86\" Visible="false" />
+  </ItemGroup>
+</Project>
