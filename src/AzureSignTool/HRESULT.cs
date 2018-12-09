@@ -10,5 +10,7 @@
 
         public const int S_SOME_SUCCESS = 0x20000001;
         public const int E_ALL_FAILED = unchecked((int)0xA0000002);
+
+        public const int TRUST_E_SUBJECT_FORM_UNKNOWN = unchecked((int)0x800B0003);
     }
 }

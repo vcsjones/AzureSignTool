@@ -1,7 +1,6 @@
 ﻿using AzureSign.Core;
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
-using McMaster.Extensions.CommandLineUtils.Conventions;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Logging;
 using System;
@@ -93,10 +92,29 @@ namespace AzureSignTool
                     _allFiles = new HashSet<string>(Files);
                     if (!string.IsNullOrWhiteSpace(InputFileList))
                     {
-                        _allFiles.UnionWith(File.ReadAllLines(InputFileList).Where(s => !string.IsNullOrWhiteSpace(s)));
+                        _allFiles.UnionWith(File.ReadLines(InputFileList).Where(s => !string.IsNullOrWhiteSpace(s)));
                     }
                 }
                 return _allFiles;
+            }
+        }
+
+        public LogLevel LogLevel
+        {
+            get
+            {
+                if (Quiet)
+                {
+                    return LogLevel.Critical;
+                }
+                else if (Verbose)
+                {
+                    return LogLevel.Trace;
+                }
+                else
+                {
+                    return LogLevel.Information;
+                }
             }
         }
 
@@ -149,22 +167,8 @@ namespace AzureSignTool
 
         public async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
-            LogLevel level;
-            if (Quiet)
-            {
-                level = LogLevel.Critical;
-            }
-            else if (Verbose)
-            {
-                level = LogLevel.Trace;
-            }
-            else
-            {
-                level = LogLevel.Information;
-            }
-
             var loggerFactory = new LoggerFactory();
-            loggerFactory.AddConsole(level, true);
+            loggerFactory.AddConsole(LogLevel, true);
             var logger = loggerFactory.CreateLogger<SignCommand>();
             X509Certificate2Collection certificates;
 
@@ -222,7 +226,7 @@ namespace AzureSignTool
                     materialized = ok.Value;
                     break;
                 default:
-                    logger.LogInformation("Failed to get configuration from Azure Key Vault.");
+                    logger.LogError("Failed to get configuration from Azure Key Vault.");
                     return E_INVALIDARG;
             }
             int failed = 0, succeeded = 0;
@@ -255,23 +259,26 @@ namespace AzureSignTool
                     }
                     using (var loopScope = logger.BeginScope("File: {Id}", filePath))
                     {
-                        logger.LogInformation($"Signing file {filePath}");
+                        logger.LogInformation($"Signing file.");
                         var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
                         switch (result)
                         {
                             case COR_E_BADIMAGEFORMAT:
-                                logger.LogError($"The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate for file {filePath}.");
+                                logger.LogError("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                break;
+                            case TRUST_E_SUBJECT_FORM_UNKNOWN:
+                                logger.LogError("The file cannot be signed because it is not a recoginized file type for signing or it is corrupt.");
                                 break;
                         }
 
                         if (result == S_OK)
                         {
-                            logger.LogInformation($"Signing completed successfully for file {filePath}.");
+                            logger.LogInformation($"Signing completed successfully.");
                             return (state.succeeded + 1, state.failed);
                         }
                         else
                         {
-                            logger.LogError($"Signing failed with error {result:X2} for file {filePath}.");
+                            logger.LogError($"Signing failed with error {result:X2}.");
                             if (!ContinueOnError || AllFiles.Count == 1)
                             {
                                 logger.LogInformation("Stopping file signing.");
@@ -329,7 +336,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
-                logger.LogError($"An exception occured while including an additional certificate:\n{e}");
+                logger.LogError(e, $"An exception occured while including an additional certificate.");
                 return e;
             }
 
