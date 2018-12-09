@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <Description>Authenticode signing library.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <RuntimeIdentifiers>win10-x64;win-10-x86</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -12,4 +12,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <None Include="x86\**" Pack="true" PackagePath="build\netcoreapp2.1\x86" />
+    <None Include="x64\**" Pack="true" PackagePath="build\netcoreapp2.1\x64"/>
+    <None Include="AzureSign.Core.Targets" Pack="true" PackagePath="build\netcoreapp2.1"/>
+  </ItemGroup>
 </Project>
