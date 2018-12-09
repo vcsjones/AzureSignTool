@@ -21,7 +21,7 @@ namespace AzureSign.Core
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
         private readonly SignCallback _signCallback;
-        private static string ManifestLocation;
+        private static string _manifestLocation;
 
         /// <summary>
         /// Creates a new instance of <see cref="AuthenticodeKeyVaultSigner" />.
@@ -84,7 +84,7 @@ namespace AzureSign.Core
                 destination[destination.Length - 1] = '\0';
             }
 
-            using (var ctx = new Kernel32.ActivationContext(ManifestLocation))
+            using (var ctx = new Kernel32.ActivationContext(_manifestLocation))
             {
                 var flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
                 if (pageHashing == true)
@@ -286,20 +286,20 @@ namespace AzureSign.Core
         /// <param name="assemblyPath">Override the default location for the assembly. Necessary when running on Azure App Services</param>
         public static void Initialize(string assemblyPath = null)
         {
-            if (ManifestLocation != null)
+            if (_manifestLocation != null)
                 return; // already initialized
 
 
-            var is64bit = IntPtr.Size == 8;
+            var is64bit = Environment.Is64BitProcess;
 
-            if(string.IsNullOrWhiteSpace(assemblyPath))
+            if (string.IsNullOrWhiteSpace(assemblyPath))
             {
                 // the directory should be next to the assembly where this type is.
                 assemblyPath = Path.GetDirectoryName(typeof(AuthenticodeKeyVaultSigner).Assembly.Location);
             }            
 
             var basePath = Path.Combine(assemblyPath, is64bit ? "x64" : "x86");
-            ManifestLocation = Path.Combine(assemblyPath, is64bit ? "x64" : "x86", "SignTool.exe.manifest");
+            _manifestLocation = Path.Combine(assemblyPath, is64bit ? "x64" : "x86", "SignTool.exe.manifest");
 
             //
             // Ensure we invoke wintrust!DllMain before we get too far.
@@ -315,7 +315,7 @@ namespace AzureSign.Core
 
         private static void ThrowIfNotInitialized()
         {
-            if(ManifestLocation == null)
+            if(_manifestLocation == null)
             {
                 throw new InvalidOperationException("Initialize must be called early in the host process");
             }
