@@ -15,6 +15,7 @@ namespace AzureSign.Core.Tests
         {
             var directory = Path.Join(Path.GetTempPath(), "AzureSign.Core.Tests");
             _scratchDirectory = Directory.CreateDirectory(directory);
+            AuthenticodeKeyVaultSigner.Initialize();
         }
 
 
