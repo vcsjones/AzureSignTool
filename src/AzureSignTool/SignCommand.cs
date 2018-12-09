@@ -1,6 +1,7 @@
 ﻿using AzureSign.Core;
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
+using McMaster.Extensions.CommandLineUtils.Conventions;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Logging;
 using System;
@@ -135,6 +136,15 @@ namespace AzureSignTool
                 }
             }
             return ValidationResult.Success;
+        }
+
+        public int OnValidationError(ValidationResult result, CommandLineApplication<SignCommand> command, IConsole console)
+        {
+            console.ForegroundColor = ConsoleColor.Red;
+            console.Error.WriteLine(result.ErrorMessage);
+            console.ResetColor();
+            command.ShowHint();
+            return E_INVALIDARG;
         }
 
         public async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
