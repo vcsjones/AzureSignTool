@@ -25,7 +25,7 @@ namespace AzureSign.Core.Tests
         {
             var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA1, TimeStampConfiguration.None);
-            var fileToSign = GetFileToSign();
+            var fileToSign = GetExeFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
         }
@@ -36,7 +36,7 @@ namespace AzureSign.Core.Tests
         {
             var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
-            var fileToSign = GetFileToSign();
+            var fileToSign = GetExeFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
         }
@@ -48,7 +48,7 @@ namespace AzureSign.Core.Tests
         {
             var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
-            var fileToSign = GetFileToSign();
+            var fileToSign = GetExeFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
         }
@@ -60,7 +60,7 @@ namespace AzureSign.Core.Tests
             var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
-            var fileToSign = GetFileToSign();
+            var fileToSign = GetExeFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
         }
@@ -73,16 +73,35 @@ namespace AzureSign.Core.Tests
             var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
-            var fileToSign = GetFileToSign();
+            var fileToSign = GetExeFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
         }
 
-        private string GetFileToSign()
+        [Fact]
+        public void ShouldSignMsixWithRSA2048_Sha256FileDigest_WithTimestamps()
+        {
+            var signingCert = new X509Certificate2(Path.Combine("signcerts", "rsa-2048.pfx"), "test", X509KeyStorageFlags.EphemeralKeySet);
+            var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
+            var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
+            var fileToSign = GetMsixFileToSign();
+            var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+        }
+
+        private string GetExeFileToSign()
         {
             var guid = Guid.NewGuid();
             var path = Path.Combine(_scratchDirectory.FullName, $"{guid}.exe");
-            File.Copy("signtarget.exe", path);
+            File.Copy(Path.Combine("testtargets", "signtarget.exe"), path);
+            return path;
+        }
+
+        private string GetMsixFileToSign()
+        {
+            var guid = Guid.NewGuid();
+            var path = Path.Combine(_scratchDirectory.FullName, $"{guid}.msix");
+            File.Copy(Path.Combine("testtargets", "signtarget.msix"), path);
             return path;
         }
 
