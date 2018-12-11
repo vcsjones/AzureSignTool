@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using AzureSign.Core;
 using McMaster.Extensions.CommandLineUtils;
 
 using static AzureSignTool.HRESULT;
@@ -16,9 +15,6 @@ namespace AzureSignTool
                 Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
                 return E_PLATFORMNOTSUPPORTED;
             }
-
-            AuthenticodeKeyVaultSigner.Initialize();
-
             var application = new CommandLineApplication<Program>(throwOnUnexpectedArg: false);
             application.ValueParsers.Add(new HashAlgorithmNameValueParser());
             application.Command<SignCommand>("sign", throwOnUnexpectedArg: false, configuration: config =>
