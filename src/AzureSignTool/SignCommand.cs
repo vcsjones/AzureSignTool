@@ -167,146 +167,148 @@ namespace AzureSignTool
 
         public async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
-            var loggerFactory = new LoggerFactory();
-            loggerFactory.AddConsole(LogLevel, true);
-            var logger = loggerFactory.CreateLogger<SignCommand>();
-            X509Certificate2Collection certificates;
+            using (var loggerFactory = new LoggerFactory())
+            {
+                loggerFactory.AddConsole(LogLevel, true);
+                var logger = loggerFactory.CreateLogger<SignCommand>();
+                X509Certificate2Collection certificates;
 
-            switch (GetAdditionalCertificates(AdditionalCertificates, logger))
-            {
-                case ErrorOr<X509Certificate2Collection>.Ok d:
-                    certificates = d.Value;
-                    break;
-                case ErrorOr<X509Certificate2Collection>.Err err:
-                    logger.LogError(err.Error, err.Error.Message);
-                    return E_INVALIDARG;
-                default:
-                    logger.LogError("Failed to include additional certificates.");
-                    return E_INVALIDARG;
-            }
-
-            var configuration = new AzureKeyVaultSignConfigurationSet
-            {
-                AzureKeyVaultUrl = KeyVaultUri,
-                AzureKeyVaultCertificateName = KeyVaultCertificate,
-                AzureClientId = KeyVaultClientId.Value,
-                AzureAccessToken = KeyVaultAccessToken.Value,
-                AzureClientSecret = KeyVaultClientSecret.Value,
-            };
-
-            TimeStampConfiguration timeStampConfiguration;
-
-            if (Rfc3161Timestamp.Present)
-            {
-                timeStampConfiguration = new TimeStampConfiguration(Rfc3161Timestamp.Uri, TimestampDigestAlgorithm, TimeStampType.RFC3161);
-            }
-            else if (AuthenticodeTimestamp.Present)
-            {
-                timeStampConfiguration = new TimeStampConfiguration(AuthenticodeTimestamp.Uri, default, TimeStampType.Authenticode);
-            }
-            else
-            {
-                timeStampConfiguration = TimeStampConfiguration.None;
-            }
-            bool? performPageHashing = null;
-            if (PageHashing)
-            {
-                performPageHashing = true;
-            }
-            if (NoPageHashing)
-            {
-                performPageHashing = false;
-            }
-            var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
-            var materializedResult = await configurationDiscoverer.Materialize(configuration);
-            AzureKeyVaultMaterializedConfiguration materialized;
-            switch (materializedResult)
-            {
-                case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Ok ok:
-                    materialized = ok.Value;
-                    break;
-                default:
-                    logger.LogError("Failed to get configuration from Azure Key Vault.");
-                    return E_INVALIDARG;
-            }
-            int failed = 0, succeeded = 0;
-            var cancellationSource = new CancellationTokenSource();
-            console.CancelKeyPress += (_, e) =>
-            {
-                e.Cancel = true;
-                cancellationSource.Cancel();
-                logger.LogInformation("Cancelling signing operations.");
-            };
-            var options = new ParallelOptions();
-            if (MaxDegreeOfParallelism.HasValue)
-            {
-                options.MaxDegreeOfParallelism = MaxDegreeOfParallelism.Value;
-            }
-            logger.LogTrace("Creating context");
-            var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
-            using (var keyVault = new RSAKeyVault(context))
-            using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, FileDigestAlgorithm, timeStampConfiguration, certificates))
-            {
-                Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                switch (GetAdditionalCertificates(AdditionalCertificates, logger))
                 {
-                    if (cancellationSource.IsCancellationRequested)
-                    {
-                        pls.Stop();
-                    }
-                    if (pls.IsStopped)
-                    {
-                        return state;
-                    }
-                    using (var loopScope = logger.BeginScope("File: {Id}", filePath))
-                    {
-                        logger.LogInformation($"Signing file.");
-                        var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
-                        switch (result)
-                        {
-                            case COR_E_BADIMAGEFORMAT:
-                                logger.LogError("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
-                                break;
-                            case TRUST_E_SUBJECT_FORM_UNKNOWN:
-                                logger.LogError("The file cannot be signed because it is not a recoginized file type for signing or it is corrupt.");
-                                break;
-                        }
+                    case ErrorOr<X509Certificate2Collection>.Ok d:
+                        certificates = d.Value;
+                        break;
+                    case ErrorOr<X509Certificate2Collection>.Err err:
+                        logger.LogError(err.Error, err.Error.Message);
+                        return E_INVALIDARG;
+                    default:
+                        logger.LogError("Failed to include additional certificates.");
+                        return E_INVALIDARG;
+                }
 
-                        if (result == S_OK)
+                var configuration = new AzureKeyVaultSignConfigurationSet
+                {
+                    AzureKeyVaultUrl = KeyVaultUri,
+                    AzureKeyVaultCertificateName = KeyVaultCertificate,
+                    AzureClientId = KeyVaultClientId.Value,
+                    AzureAccessToken = KeyVaultAccessToken.Value,
+                    AzureClientSecret = KeyVaultClientSecret.Value,
+                };
+
+                TimeStampConfiguration timeStampConfiguration;
+
+                if (Rfc3161Timestamp.Present)
+                {
+                    timeStampConfiguration = new TimeStampConfiguration(Rfc3161Timestamp.Uri, TimestampDigestAlgorithm, TimeStampType.RFC3161);
+                }
+                else if (AuthenticodeTimestamp.Present)
+                {
+                    timeStampConfiguration = new TimeStampConfiguration(AuthenticodeTimestamp.Uri, default, TimeStampType.Authenticode);
+                }
+                else
+                {
+                    timeStampConfiguration = TimeStampConfiguration.None;
+                }
+                bool? performPageHashing = null;
+                if (PageHashing)
+                {
+                    performPageHashing = true;
+                }
+                if (NoPageHashing)
+                {
+                    performPageHashing = false;
+                }
+                var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
+                var materializedResult = await configurationDiscoverer.Materialize(configuration);
+                AzureKeyVaultMaterializedConfiguration materialized;
+                switch (materializedResult)
+                {
+                    case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Ok ok:
+                        materialized = ok.Value;
+                        break;
+                    default:
+                        logger.LogError("Failed to get configuration from Azure Key Vault.");
+                        return E_INVALIDARG;
+                }
+                int failed = 0, succeeded = 0;
+                var cancellationSource = new CancellationTokenSource();
+                console.CancelKeyPress += (_, e) =>
+                {
+                    e.Cancel = true;
+                    cancellationSource.Cancel();
+                    logger.LogInformation("Cancelling signing operations.");
+                };
+                var options = new ParallelOptions();
+                if (MaxDegreeOfParallelism.HasValue)
+                {
+                    options.MaxDegreeOfParallelism = MaxDegreeOfParallelism.Value;
+                }
+                logger.LogTrace("Creating context");
+                var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
+                using (var keyVault = new RSAKeyVault(context))
+                using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, FileDigestAlgorithm, timeStampConfiguration, certificates))
+                {
+                    Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                    {
+                        if (cancellationSource.IsCancellationRequested)
                         {
-                            logger.LogInformation($"Signing completed successfully.");
-                            return (state.succeeded + 1, state.failed);
+                            pls.Stop();
                         }
-                        else
+                        if (pls.IsStopped)
                         {
-                            logger.LogError($"Signing failed with error {result:X2}.");
-                            if (!ContinueOnError || AllFiles.Count == 1)
+                            return state;
+                        }
+                        using (var loopScope = logger.BeginScope("File: {Id}", filePath))
+                        {
+                            logger.LogInformation($"Signing file.");
+                            var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
+                            switch (result)
                             {
-                                logger.LogInformation("Stopping file signing.");
-                                pls.Stop();
+                                case COR_E_BADIMAGEFORMAT:
+                                    logger.LogError("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
+                                    break;
+                                case TRUST_E_SUBJECT_FORM_UNKNOWN:
+                                    logger.LogError("The file cannot be signed because it is not a recoginized file type for signing or it is corrupt.");
+                                    break;
                             }
 
-                            return (state.succeeded, state.failed + 1);
+                            if (result == S_OK)
+                            {
+                                logger.LogInformation($"Signing completed successfully.");
+                                return (state.succeeded + 1, state.failed);
+                            }
+                            else
+                            {
+                                logger.LogError($"Signing failed with error {result:X2}.");
+                                if (!ContinueOnError || AllFiles.Count == 1)
+                                {
+                                    logger.LogInformation("Stopping file signing.");
+                                    pls.Stop();
+                                }
+
+                                return (state.succeeded, state.failed + 1);
+                            }
                         }
-                    }
-                }, result =>
+                    }, result =>
+                    {
+                        Interlocked.Add(ref failed, result.failed);
+                        Interlocked.Add(ref succeeded, result.succeeded);
+                    });
+                }
+                logger.LogInformation($"Successful operations: {succeeded}");
+                logger.LogInformation($"Failed operations: {failed}");
+                if (failed > 0 && succeeded == 0)
                 {
-                    Interlocked.Add(ref failed, result.failed);
-                    Interlocked.Add(ref succeeded, result.succeeded);
-                });
-            }
-            logger.LogInformation($"Successful operations: {succeeded}");
-            logger.LogInformation($"Failed operations: {failed}");
-            if (failed > 0 && succeeded == 0)
-            {
-                return E_ALL_FAILED;
-            }
-            else if (failed > 0)
-            {
-                return S_SOME_SUCCESS;
-            }
-            else
-            {
-                return S_OK;
+                    return E_ALL_FAILED;
+                }
+                else if (failed > 0)
+                {
+                    return S_SOME_SUCCESS;
+                }
+                else
+                {
+                    return S_OK;
+                }
             }
         }
 
