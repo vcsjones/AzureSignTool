@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/AzureSign.Core/AzureSign.Core.csproj" />   
+    <ProjectReference Include="../../src/AzureSign.Core/AzureSign.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testcerts\*.cer">
@@ -24,9 +24,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Update="testtargets\*.*">
+    <None Update="signtarget.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <Import Project="../../src/AzureSign.Core/AzureSign.Core.targets" />
 </Project>
