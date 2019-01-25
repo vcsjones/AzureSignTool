@@ -1,7 +1,6 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
-using AzureSign.Core;
 
 namespace AzureSign.Core.Tests
 {
@@ -27,15 +26,11 @@ namespace AzureSign.Core.Tests
         [Fact]
         public void ShouldAddCertificate()
         {
-            using (var store = MemoryCertificateStore.Create())
-            {
-                using (var cert = new X509Certificate2("testcerts\\kevin_jones.cer"))
-                {
-                    Assert.Empty(store.Certificates);
-                    store.Add(cert);
-                    Assert.NotEmpty(store.Certificates);
-                }
-            }
+            using var store = MemoryCertificateStore.Create();
+            using var cert = new X509Certificate2("testcerts\\kevin_jones.cer");
+            Assert.Empty(store.Certificates);
+            store.Add(cert);
+            Assert.NotEmpty(store.Certificates);
         }
     }
 }

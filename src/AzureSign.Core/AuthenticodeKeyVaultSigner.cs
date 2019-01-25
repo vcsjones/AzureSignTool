@@ -36,7 +36,7 @@ namespace AzureSign.Core
         /// <param name="additionalCertificates">Any additional certificates to assist in building a certificate chain.</param>
         public AuthenticodeKeyVaultSigner(AsymmetricAlgorithm signingAlgorithm, X509Certificate2 signingCertificate,
             HashAlgorithmName fileDigestAlgorithm, TimeStampConfiguration timeStampConfiguration,
-            X509Certificate2Collection additionalCertificates = null)
+            X509Certificate2Collection? additionalCertificates = null)
         {
             _fileDigestAlgorithm = fileDigestAlgorithm;
             _signingCertificate = signingCertificate ?? throw new ArgumentNullException(nameof(signingCertificate));
@@ -73,7 +73,7 @@ namespace AzureSign.Core
         /// <param name="logger">An optional logger to capture signing operations.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger logger = null)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
         {
             void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
             {
@@ -93,7 +93,7 @@ namespace AzureSign.Core
 
             SignerSignTimeStampFlags timeStampFlags;
             ReadOnlySpan<byte> timestampAlgorithmOid;
-            string timestampUrl;
+            string? timestampUrl;
             switch (_timeStampConfiguration.Type)
             {
                 case TimeStampType.Authenticode:

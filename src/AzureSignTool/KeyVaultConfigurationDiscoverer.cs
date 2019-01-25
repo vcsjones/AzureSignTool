@@ -20,7 +20,7 @@ namespace AzureSignTool
         public async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
         {
             var authenticationFailure = false;
-            async Task<string> Authenticate(string authority, string resource, string scope)
+            async Task<string?> Authenticate(string authority, string resource, string scope)
             {
                 if (!string.IsNullOrWhiteSpace(configuration.AzureAccessToken))
                 {

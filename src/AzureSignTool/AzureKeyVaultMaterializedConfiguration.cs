@@ -3,7 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace AzureSignTool
 {
-    public class AzureKeyVaultMaterializedConfiguration
+    public sealed class AzureKeyVaultMaterializedConfiguration
     {
         public AzureKeyVaultMaterializedConfiguration(KeyVaultClient client, X509Certificate2 publicCertificate, KeyIdentifier keyId)
         {
