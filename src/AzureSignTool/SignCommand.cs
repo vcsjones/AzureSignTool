@@ -1,8 +1,10 @@
 ﻿using AzureSign.Core;
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
-using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Logging;
+
+using RSAKeyVaultProvider;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -28,11 +30,17 @@ namespace AzureSignTool
         [Option("-kvs | --azure-key-vault-client-secret", "The Client Secret to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
         public (bool Present, string Value) KeyVaultClientSecret { get; set; }
 
+        [Option("-kvt | --azure-key-vault-tenant-id", "The Tenand Id to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
+        public (bool Present, string Value) KeyVaultTenantId { get; set; }
+
         [Option("-kvc | --azure-key-vault-certificate", "The name of the certificate in Azure Key Vault.", CommandOptionType.SingleValue), Required]
         public string KeyVaultCertificate { get; set; }
 
         [Option("-kva | --azure-key-vault-accesstoken", "The Access Token to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
         public (bool Present, string Value) KeyVaultAccessToken { get; set; }
+
+        [Option("-kvm | --azure-key-vault-managed-identity", CommandOptionType.NoValue)]
+        public bool UseManagedIdentity { get; set; }
 
         [Option("-d | --description", "Provide a description of the signed content.", CommandOptionType.SingleValue)]
         public string Description { get; set; }
@@ -77,6 +85,8 @@ namespace AzureSignTool
 
         [Option("-mdop | --max-degree-of-parallelism", "The maximum number of concurrent signing operations.", CommandOptionType.SingleValue), Range(-1, int.MaxValue)]
         public int? MaxDegreeOfParallelism { get; set; }
+
+
 
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
@@ -142,6 +152,18 @@ namespace AzureSignTool
             {
                 return new ValidationResult("Must supply '--key-vault-client-secret' when using '--key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
             }
+
+            if (KeyVaultClientId.Present && !KeyVaultTenantId.Present)
+            {
+                return new ValidationResult("Must supply '--key-vault-tenant-id' when using '--key-vault-client-id'.", new[] { nameof(KeyVaultTenantId) });
+            }
+
+
+            if (UseManagedIdentity && (KeyVaultAccessToken.Present || KeyVaultClientId.Present))
+            {
+                return new ValidationResult("Cannot use ' --azure-key-vault-managed-identity' and '--key-vault-access-token' or '--key-vault-client-id'", new[] { nameof(UseManagedIdentity) });
+            }
+
             if (AllFiles.Count == 0)
             {
                 return new ValidationResult("At least one file must be specified to sign.");
@@ -169,6 +191,7 @@ namespace AzureSignTool
         {
             using (var loggerFactory = new LoggerFactory())
             {
+
                 loggerFactory.AddConsole(LogLevel, true);
                 var logger = loggerFactory.CreateLogger<SignCommand>();
                 X509Certificate2Collection certificates;
@@ -188,9 +211,10 @@ namespace AzureSignTool
 
                 var configuration = new AzureKeyVaultSignConfigurationSet
                 {
-                    AzureKeyVaultUrl = KeyVaultUri,
+                    AzureKeyVaultUrl = new Uri(KeyVaultUri),
                     AzureKeyVaultCertificateName = KeyVaultCertificate,
                     AzureClientId = KeyVaultClientId.Value,
+                    AzureTenantId = KeyVaultTenantId.Value,
                     AzureAccessToken = KeyVaultAccessToken.Value,
                     AzureClientSecret = KeyVaultClientSecret.Value,
                 };
@@ -244,8 +268,8 @@ namespace AzureSignTool
                     options.MaxDegreeOfParallelism = MaxDegreeOfParallelism.Value;
                 }
                 logger.LogTrace("Creating context");
-                var context = new KeyVaultContext(materialized.Client, materialized.KeyId, materialized.PublicCertificate);
-                using (var keyVault = new RSAKeyVault(context))
+
+                using (var keyVault =  RSAFactory.Create(materialized.TokenCredential, materialized.KeyId, materialized.PublicCertificate))
                 using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, FileDigestAlgorithm, timeStampConfiguration, certificates))
                 {
                     Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
