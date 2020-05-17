@@ -22,6 +22,8 @@ Example usage:
 	  
 The `--help` or `sign --help` option provides more detail about each parameter.
 
+[A walk-through is available](WALKTHROUGH.md) if you're interested on getting set up from scratch.
+
 ## Parameters
 
 * `--azure-key-vault-url` [short: `-kvu`, required: yes]: A fully qualified URL of the key vault with
