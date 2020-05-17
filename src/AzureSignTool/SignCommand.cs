@@ -28,6 +28,9 @@ namespace AzureSignTool
         [Option("-kvs | --azure-key-vault-client-secret", "The Client Secret to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
         public (bool Present, string Value) KeyVaultClientSecret { get; set; }
 
+        [Option("-kvm | --azure-key-vault-managedidentity", "Utilize Azure Managed Identity to authenticate to KeyVault.", CommandOptionType.NoValue)]
+        public bool UseManagedIdentity { get; set; }
+
         [Option("-kvc | --azure-key-vault-certificate", "The name of the certificate in Azure Key Vault.", CommandOptionType.SingleValue), Required]
         public string KeyVaultCertificate { get; set; }
 
@@ -128,9 +131,9 @@ namespace AzureSignTool
             {
                 return new ValidationResult("Cannot use '--quiet' and '--verbose' options together.", new[] { nameof(NoPageHashing), nameof(PageHashing) });
             }
-            if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present))
+            if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present, UseManagedIdentity))
             {
-                return new ValidationResult("One of '--key-vault-access-token' or '--key-vault-client-id' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId) });
+                return new ValidationResult("One of '--azure-key-vault-access-token' or '--azure-key-vault-client-id' or '--azure-key-vault-managedidentity' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId), nameof(UseManagedIdentity) });
             }
 
             if (Rfc3161Timestamp.Present && AuthenticodeTimestamp.Present)
@@ -140,7 +143,7 @@ namespace AzureSignTool
 
             if (KeyVaultClientId.Present && !KeyVaultClientSecret.Present)
             {
-                return new ValidationResult("Must supply '--key-vault-client-secret' when using '--key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
+                return new ValidationResult("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
             }
             if (AllFiles.Count == 0)
             {
@@ -190,6 +193,7 @@ namespace AzureSignTool
                 {
                     AzureKeyVaultUrl = KeyVaultUri,
                     AzureKeyVaultCertificateName = KeyVaultCertificate,
+                    AzureManagedIdentity = UseManagedIdentity,
                     AzureClientId = KeyVaultClientId.Value,
                     AzureAccessToken = KeyVaultAccessToken.Value,
                     AzureClientSecret = KeyVaultClientSecret.Value,
@@ -345,6 +349,9 @@ namespace AzureSignTool
             return collection;
         }
 
-        private static bool OneTrue(bool left, bool right) => left != right && (left || right);
+        private static bool OneTrue(params bool[] checks)
+        {
+            return checks.Count(b => b) == 1;
+        }
     }
 }

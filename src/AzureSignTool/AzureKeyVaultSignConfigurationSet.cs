@@ -8,5 +8,6 @@ namespace AzureSignTool
         public string AzureKeyVaultUrl { get; set; }
         public string AzureKeyVaultCertificateName { get; set; }
         public string AzureAccessToken { get; set; }
+        public bool AzureManagedIdentity { get; set; }
     }
 }

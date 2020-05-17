@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.Azure.Services.AppAuthentication;
 
 namespace AzureSignTool
 {
@@ -45,8 +46,12 @@ namespace AzureSignTool
                 }
             }
 
-            var vault = new KeyVaultClient(Authenticate);
-            
+            var callback = configuration.AzureManagedIdentity
+                ? new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback)
+                : Authenticate;
+
+            var vault = new KeyVaultClient(callback);
+
             X509Certificate2 certificate;
             CertificateBundle azureCertificate;
             try

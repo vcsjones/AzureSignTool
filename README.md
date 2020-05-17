@@ -9,8 +9,7 @@ Example usage:
 
     AzureSignTool.exe sign -du "https://vcsjones.com" \
 	  -fd sha384 -kvu https://my-vault.vault.azure.net \
-	  -kvi 01234567-abcd-ef012-0000-0123456789ab \
-	  -kvs <token> \
+	  -kvm \
 	  -kvc my-key-name \
 	  -tr http://timestamp.digicert.com \
 	  -td sha384 \
@@ -26,6 +25,10 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 * `--azure-key-vault-url` [short: `-kvu`, required: yes]: A fully qualified URL of the key vault with
 	the certificate that will be used for signing. An example value might be `https://my-vault.vault.azure.net`.
+
+* `--azure-key-vault-managedidentity` [short: `-kvm`, required: possibly]: Set this flag to utilize either your implicit
+	Azure Identity or a Managed Identity.  Set only this flag, or one of `--azure-key-vault-client-id` 
+	`--azure-key-vault-client-accesstoken` parameters
 
 * `--azure-key-vault-client-id` [short: `-kvi`, required: possibly]: This is the client ID used to authenticate to
 	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
