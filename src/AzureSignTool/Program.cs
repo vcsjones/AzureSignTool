@@ -6,9 +6,9 @@ using static AzureSignTool.HRESULT;
 
 namespace AzureSignTool
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
