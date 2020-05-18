@@ -140,7 +140,7 @@ namespace AzureSignTool
             }
             if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present))
             {
-                return new ValidationResult("One of '--key-vault-access-token' or '--key-vault-client-id' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId) });
+                return new ValidationResult("One of '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId) });
             }
 
             if (Rfc3161Timestamp.Present && AuthenticodeTimestamp.Present)
@@ -150,18 +150,18 @@ namespace AzureSignTool
 
             if (KeyVaultClientId.Present && !KeyVaultClientSecret.Present)
             {
-                return new ValidationResult("Must supply '--key-vault-client-secret' when using '--key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
+                return new ValidationResult("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
             }
 
             if (KeyVaultClientId.Present && !KeyVaultTenantId.Present)
             {
-                return new ValidationResult("Must supply '--key-vault-tenant-id' when using '--key-vault-client-id'.", new[] { nameof(KeyVaultTenantId) });
+                return new ValidationResult("Must supply '--azure-key-vault-tenant-id' when using '--azure-key-vault-client-id'.", new[] { nameof(KeyVaultTenantId) });
             }
 
 
             if (UseManagedIdentity && (KeyVaultAccessToken.Present || KeyVaultClientId.Present))
             {
-                return new ValidationResult("Cannot use ' --azure-key-vault-managed-identity' and '--key-vault-access-token' or '--key-vault-client-id'", new[] { nameof(UseManagedIdentity) });
+                return new ValidationResult("Cannot use ' --azure-key-vault-managed-identity' and '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id'", new[] { nameof(UseManagedIdentity) });
             }
 
             if (AllFiles.Count == 0)
