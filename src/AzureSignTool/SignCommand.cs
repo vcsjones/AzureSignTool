@@ -86,7 +86,8 @@ namespace AzureSignTool
         [Option("-mdop | --max-degree-of-parallelism", "The maximum number of concurrent signing operations.", CommandOptionType.SingleValue), Range(-1, int.MaxValue)]
         public int? MaxDegreeOfParallelism { get; set; }
 
-
+        [Option("--colors", "Enable color output on the command line.", CommandOptionType.NoValue)]
+        public bool Colors { get; set; } = false;
 
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
@@ -187,12 +188,18 @@ namespace AzureSignTool
             return E_INVALIDARG;
         }
 
+        private void ConfigureLogging(ILoggingBuilder builder)
+        {
+            builder.AddConsole(console => {
+                console.DisableColors = !Colors;
+            });
+            builder.SetMinimumLevel(LogLevel);
+        }
+
         public async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
         {
-            using (var loggerFactory = new LoggerFactory())
+            using (var loggerFactory = LoggerFactory.Create(ConfigureLogging))
             {
-
-                loggerFactory.AddConsole(LogLevel, true);
                 var logger = loggerFactory.CreateLogger<SignCommand>();
                 X509Certificate2Collection certificates;
 
