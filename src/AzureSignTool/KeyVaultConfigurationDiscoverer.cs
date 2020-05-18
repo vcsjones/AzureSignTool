@@ -47,10 +47,31 @@ namespace AzureSignTool
                 
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
+            catch (KeyVaultErrorException kvException)
+            {
+                if (authenticationFailure)
+                {
+                    return kvException;
+                }
+
+                _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
+
+                var error = kvException.Body.Error;
+                _logger.LogError($"KeyVault Error Code: {error.Code}, Message: {error.Message}");
+
+                if (error.InnerError != null)
+                {
+                    _logger.LogError($"KeyVault Inner Error Code: {error.InnerError.Code}, Message: {error.InnerError.Message}");
+                }
+
+                return kvException;
+            }
             catch (Exception e)
             {
-                 _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate.");
-                
+                if (!authenticationFailure)
+                {
+                    _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate. Message: '{e.Message}'");
+                }
                 return e;
             }
             var keyId = azureCertificate.KeyId;
