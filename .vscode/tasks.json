@@ -8,7 +8,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/AzureSignTool/AzureSignTool.csproj"
+                "${workspaceFolder}/src/AzureSignTool/AzureSignTool.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
