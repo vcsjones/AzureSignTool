@@ -1,19 +1,22 @@
-﻿using Microsoft.Azure.KeyVault;
+﻿using System;
 using System.Security.Cryptography.X509Certificates;
+
+using Azure.Core;
+
 
 namespace AzureSignTool
 {
     public class AzureKeyVaultMaterializedConfiguration
     {
-        public AzureKeyVaultMaterializedConfiguration(KeyVaultClient client, X509Certificate2 publicCertificate, KeyIdentifier keyId)
+        public AzureKeyVaultMaterializedConfiguration(TokenCredential credential, X509Certificate2 publicCertificate, Uri keyId)
         {
-            Client = client;
+            TokenCredential = credential;
             KeyId = keyId;
             PublicCertificate = publicCertificate;
         }
 
         public X509Certificate2 PublicCertificate { get; }
-        public KeyVaultClient Client { get; }
-        public KeyIdentifier KeyId { get; }
+        public TokenCredential TokenCredential { get; }
+        public Uri KeyId { get; }
     }
 }
