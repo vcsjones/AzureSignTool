@@ -1,5 +1,8 @@
 # Walkthrough: Using AzureSignTool to sign files with Azure DevOps
 
+*Note*: Sean Killeen has an expanded version of this on his blog, [How to: Use AzureSignTool to sign files with Azure DevOps using a certificate in Azure Key Vault
+][1].
+
 A lightweight guide on how to use this tool in context.
 
 * Obtain a certificate.
@@ -41,3 +44,5 @@ A lightweight guide on how to use this tool in context.
 At this point, the build should be able to run and sign the files you have listed.
 
 Happy signing!
+
+[1]: https://seankilleen.com/2020/05/how-to-use-azuresigntool-to-sign-files-with-azure-devops-using-a-certificate-in-azure-keyvault/
