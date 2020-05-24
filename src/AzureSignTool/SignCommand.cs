@@ -158,13 +158,10 @@ namespace AzureSignTool
             {
                 return new ValidationResult("Must supply '--azure-key-vault-tenant-id' when using '--azure-key-vault-client-id'.", new[] { nameof(KeyVaultTenantId) });
             }
-
-
             if (UseManagedIdentity && (KeyVaultAccessToken.Present || KeyVaultClientId.Present))
             {
-                return new ValidationResult("Cannot use ' --azure-key-vault-managed-identity' and '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id'", new[] { nameof(UseManagedIdentity) });
+                return new ValidationResult("Cannot use '--azure-key-vault-managed-identity' and '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id'", new[] { nameof(UseManagedIdentity) });
             }
-
             if (AllFiles.Count == 0)
             {
                 return new ValidationResult("At least one file must be specified to sign.");
@@ -234,10 +231,12 @@ namespace AzureSignTool
                 }
                 else if (AuthenticodeTimestamp.Present)
                 {
+                    logger.LogWarning("Authenticode timestamps should only be used for compatibility purposes. RFC3161 timestamps should be used.");
                     timeStampConfiguration = new TimeStampConfiguration(AuthenticodeTimestamp.Uri, default, TimeStampType.Authenticode);
                 }
                 else
                 {
+                    logger.LogWarning("Signatures will not be timestamped. Signatures will become invalid when the signing certificate expires.");
                     timeStampConfiguration = TimeStampConfiguration.None;
                 }
                 bool? performPageHashing = null;
@@ -369,7 +368,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
-                logger.LogError(e, $"An exception occured while including an additional certificate.");
+                logger.LogError(e, "An exception occured while including an additional certificate.");
                 return e;
             }
 
