@@ -10,6 +10,7 @@ Example usage:
     AzureSignTool.exe sign -du "https://vcsjones.com" \
 	  -fd sha384 -kvu https://my-vault.vault.azure.net \
 	  -kvi 01234567-abcd-ef012-0000-0123456789ab \
+	  -kvt 01234567-abcd-ef012-0000-0123456789ab \
 	  -kvs <token> \
 	  -kvc my-key-name \
 	  -tr http://timestamp.digicert.com \
@@ -31,21 +32,29 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 * `--azure-key-vault-client-id` [short: `-kvi`, required: possibly]: This is the client ID used to authenticate to
 	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
-	directly with the `--azure-key-vault-accesstoken` option. If this parameter is supplied, `--azure-key-vault-client-secret`
+	directly with the `--azure-key-vault-accesstoken` option. If this parameter is supplied, `--azure-key-vault-client-secret` and `--azure-key-vault-tenant-id`
 	must be supplied as well.
 
 * `--azure-key-vault-client-secret` [short: `-kvs`, required: possibly]: This is the client secret used to authenticate to
 	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
-	directly with the `--azure-key-vault-accesstoken` option. If this parameter is supplied, `--azure-key-vault-client-id`
-	must be supplied as well.
+	directly with the `--azure-key-vault-accesstoken` option or when using managed identities with `--azure-key-vault-managed-identity`. If this parameter is supplied, `--azure-key-vault-client-id` and `--azure-key-vault-tenant-id` must be supplied as well.
+	
+* `--azure-key-vault-tenant-id` [short: `-kvt`, required: possibly]: This is the tenant id used to authenticate to
+	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
+	directly with the `--azure-key-vault-accesstoken` option or when using managed identities with `--azure-key-vault-managed-identity`. If this parameter is supplied, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` must be supplied as well.	
 
 * `--azure-key-vault-certificate` [short: `-kvc`, required: yes]: The name of the certificate used to perform the signing
 	operation.
 
 * `--azure-key-vault-accesstoken` [short: `-kva`, required: possibly]: An access token used to authenticate to Azure. This
-	can be used instead of the `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
+	can be used instead of the `--azure-key-vault-managed-identity`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
 	if AzureSignTool is being used as part of another program that is already authenticated and has an access token to
 	Azure.
+	
+* `--azure-key-vault-managed-identity` [short: `-kvm`, required: possibly]: Use the ambiant Managed Identity to authenticate to Azure. This
+	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
+	if AzureSignTool is being used on a VM/service/CLI that is configured for managed identities to
+	Azure.	
 
 * `--description` [short: `-d`, required: no]: A description of the signed content. This parameter serves the same purpose
 	as the `/d` option in the Windows SDK `signtool`. If this parameter is not supplied, the signature will not contain a
