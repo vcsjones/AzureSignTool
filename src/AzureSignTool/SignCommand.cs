@@ -221,6 +221,7 @@ namespace AzureSignTool
                     AzureTenantId = KeyVaultTenantId.Value,
                     AzureAccessToken = KeyVaultAccessToken.Value,
                     AzureClientSecret = KeyVaultClientSecret.Value,
+                    ManagedIdentity = UseManagedIdentity,
                 };
 
                 TimeStampConfiguration timeStampConfiguration;
