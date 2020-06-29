@@ -139,9 +139,9 @@ namespace AzureSignTool
             {
                 return new ValidationResult("Cannot use '--quiet' and '--verbose' options together.", new[] { nameof(NoPageHashing), nameof(PageHashing) });
             }
-            if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present))
+            if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present, UseManagedIdentity))
             {
-                return new ValidationResult("One of '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId) });
+                return new ValidationResult("One of '--azure-key-vault-accesstoken', '--azure-key-vault-client-id' or '--azure-key-vault-managed-identity' must be supplied.", new[] { nameof(KeyVaultAccessToken), nameof(KeyVaultClientId) });
             }
 
             if (Rfc3161Timestamp.Present && AuthenticodeTimestamp.Present)
@@ -375,6 +375,6 @@ namespace AzureSignTool
             return collection;
         }
 
-        private static bool OneTrue(bool left, bool right) => left != right && (left || right);
+        private static bool OneTrue(params bool[] values) => values.Count(v => v) == 1;
     }
 }
