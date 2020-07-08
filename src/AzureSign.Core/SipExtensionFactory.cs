@@ -13,7 +13,7 @@ namespace AzureSign.Core
     {
         public static SipKind GetSipKind(ReadOnlySpan<char> filePath)
         {
-            var extension = Path.GetExtension(filePath);
+            var extension = Path.GetExtension(filePath.ToString());
             if (extension.Equals(".appx", StringComparison.OrdinalIgnoreCase))
             {
                 return SipKind.Appx;
