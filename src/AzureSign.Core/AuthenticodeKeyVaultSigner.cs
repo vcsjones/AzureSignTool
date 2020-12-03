@@ -75,7 +75,7 @@ namespace AzureSign.Core
         /// operation completed successfully.</returns>
         public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger logger = null)
         {
-            void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
+            static void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
             {
                 str.CopyTo(destination);
                 destination[destination.Length - 1] = '\0';
@@ -125,7 +125,7 @@ namespace AzureSign.Core
             CopyAndNullTerminate(descriptionUrl, descriptionUrlBuffer);
             if (timestampUrl != null)
             {
-                CopyAndNullTerminate(timestampUrl, timestampUrlBuffer);
+                CopyAndNullTerminate(timestampUrl.AsSpan(), timestampUrlBuffer);
             }
 
             fixed (byte* pTimestampAlgorithm = timestampAlgorithmOid)
