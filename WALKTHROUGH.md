@@ -38,7 +38,7 @@ A lightweight guide on how to use this tool in context.
 - task: CmdLine@2
   displayName: 'Sign outputted .exe with global AzureSignTool'
   inputs:
-    script: AzureSignTool sign -du "[YOUR_URL]" -kvu "https://[VAULT_ID].vault.azure.net" -kvi "[REDACTED_APPLICATION_ID]" -kvs "[REDACTED_APPLICATION_CLIENT_SECRET" -kvc "[REDACTED_CERT_NAME]" -v [FILES_YOU_WANT_TO_SIGN]
+    script: AzureSignTool sign -du "[YOUR_URL]" -kvu "https://[VAULT_ID].vault.azure.net" -kvi "[REDACTED_APPLICATION_ID]" -kvs "[REDACTED_APPLICATION_CLIENT_SECRET]" -kvc "[REDACTED_CERT_NAME]" -v [FILES_YOU_WANT_TO_SIGN]
 ```
 
 At this point, the build should be able to run and sign the files you have listed.
