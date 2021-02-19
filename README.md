@@ -101,7 +101,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--quiet` [short: `-q`, required: no]: Do not print output to the log. This parameter does not accept a value and cannot be
 	combine with the `--verbose` option. The exit code of the process can be used to determine success or failure of the sign operation.
 	
-* `--coninue-on-error` [short: `-coe`, required: no]: If multiple files to sign are specified, this flag will cause the signing process to
+* `--continue-on-error` [short: `-coe`, required: no]: If multiple files to sign are specified, this flag will cause the signing process to
 	move on to the next file when signing fails. This flag modifies the exit code of the program. See the Exit Codes section for more
 	information.
 	
