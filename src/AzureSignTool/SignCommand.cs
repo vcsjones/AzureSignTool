@@ -89,6 +89,9 @@ namespace AzureSignTool
         [Option("--colors", "Enable color output on the command line.", CommandOptionType.NoValue)]
         public bool Colors { get; set; } = false;
 
+        [Option("-s | --skip-signed", "Skip files that are already signed.", CommandOptionType.NoValue)]
+        public bool SkipSignedFiles { get; set; } = false;
+
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
         public string[] Files { get; set; } = Array.Empty<string>();
@@ -292,6 +295,13 @@ namespace AzureSignTool
                         using (var loopScope = logger.BeginScope("File: {Id}", filePath))
                         {
                             logger.LogInformation($"Signing file.");
+
+                            if (SkipSignedFiles && IsSigned(filePath))
+                            {
+                                logger.LogInformation($"Skipping already signed file.");
+                                return (state.succeeded + 1, state.failed);
+                            }
+
                             var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
                             switch (result)
                             {
@@ -343,6 +353,18 @@ namespace AzureSignTool
             }
         }
 
+        private static bool IsSigned(string filePath)
+        {
+            try
+            {
+                _ = X509Certificate.CreateFromSignedFile(filePath);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+        }
 
         private static ErrorOr<X509Certificate2Collection> GetAdditionalCertificates(IEnumerable<string> paths, ILogger logger)
         {
