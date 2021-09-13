@@ -7,6 +7,7 @@
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>    
     <RuntimeIdentifiers>win10-x64;win10-x86</RuntimeIdentifiers>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
   
   <ItemGroup>
@@ -15,6 +16,10 @@
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.18" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.18" />
+    <PackageReference Include="MinVer" Version="2.5.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="RSAKeyVaultProvider" Version="2.1.1" />
   </ItemGroup>
   
