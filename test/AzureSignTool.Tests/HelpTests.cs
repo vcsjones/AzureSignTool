@@ -16,7 +16,7 @@ namespace AzureSignTool.Tests
             });
 
             Assert.Contains("Usage:", StdOut);
-            Assert.Equal(0, ExitCode);
+            Assert.Equal(1, ExitCode);
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace AzureSignTool.Tests
                 return Program.Main(new string[] { "sign" });
             });
 
-            Assert.Contains("Usage:", StdOut);
+            Assert.Contains("--help", StdOut);
             Assert.NotEqual(0, ExitCode);
         }
 
