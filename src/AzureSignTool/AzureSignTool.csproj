@@ -10,11 +10,11 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.2.0-preview.2" />
-    <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.0.2" />
+    <PackageReference Include="Azure.Identity" Version="1.4.1" />
+    <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.2.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.18" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.18" />
     <PackageReference Include="RSAKeyVaultProvider" Version="2.1.1" />
   </ItemGroup>
   

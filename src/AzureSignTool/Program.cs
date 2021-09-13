@@ -15,18 +15,13 @@ namespace AzureSignTool
                 Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
                 return E_PLATFORMNOTSUPPORTED;
             }
-            var application = new CommandLineApplication<Program>();
+            var application = new CommandLineApplication<SignApplication>();
             application.ValueParsers.Add(new HashAlgorithmNameValueParser());
-            application.ShowHint();
             application.Command<SignCommand>("sign", config =>
             {
                 config.Description = "Signs a file.";
-                config.Conventions.UseDefaultConventions();
             });
-            application.Command(string.Empty, config => {
-                application.ShowHelp();
-                application.ShowHint();
-            });
+            application.Conventions.UseDefaultConventions();
             application.UnrecognizedArgumentHandling = UnrecognizedArgumentHandling.StopParsingAndCollect;
             return application.Execute(args);
         }
