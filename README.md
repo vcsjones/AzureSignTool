@@ -1,7 +1,7 @@
 Azure Sign Tool
 ===============
 
-The below README is based on functionality in `main`. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v2.0.17/README.md).
+The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v3.0.0/README.md).
 
 Azure Sign Tool is similar to `signtool` in the Windows SDK, with the major difference being that it uses
 Azure Key Vault for performing the signing process. The usage is like `signtool`, except with a limited set
