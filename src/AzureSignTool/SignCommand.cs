@@ -191,6 +191,7 @@ namespace AzureSignTool
         private void ConfigureLogging(ILoggingBuilder builder)
         {
             builder.AddConsole(console => {
+                console.IncludeScopes = true;
                 console.DisableColors = !Colors;
             });
             builder.SetMinimumLevel(LogLevel);
@@ -294,11 +295,11 @@ namespace AzureSignTool
                         }
                         using (var loopScope = logger.BeginScope("File: {Id}", filePath))
                         {
-                            logger.LogInformation($"Signing file.");
+                            logger.LogInformation("Signing file.");
 
                             if (SkipSignedFiles && IsSigned(filePath))
                             {
-                                logger.LogInformation($"Skipping already signed file.");
+                                logger.LogInformation("Skipping already signed file.");
                                 return (state.succeeded + 1, state.failed);
                             }
 
@@ -315,7 +316,7 @@ namespace AzureSignTool
 
                             if (result == S_OK)
                             {
-                                logger.LogInformation($"Signing completed successfully.");
+                                logger.LogInformation("Signing completed successfully.");
                                 return (state.succeeded + 1, state.failed);
                             }
                             else
