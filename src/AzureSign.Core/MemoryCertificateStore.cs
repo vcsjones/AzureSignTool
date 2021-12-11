@@ -8,7 +8,7 @@ namespace AzureSign.Core
     internal sealed class MemoryCertificateStore : IDisposable
     {
         private IntPtr _handle;
-        private X509Store _store;
+        private readonly X509Store _store;
 
         private MemoryCertificateStore(IntPtr handle)
         {
@@ -50,10 +50,12 @@ namespace AzureSign.Core
         private void Dispose(bool disposing)
         {
             GC.SuppressFinalize(this);
+
             if (disposing)
             {
                 _store.Dispose();
             }
+
             FreeHandle();
         }
 

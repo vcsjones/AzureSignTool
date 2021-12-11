@@ -36,7 +36,7 @@ namespace AzureSign.Core
         /// <param name="additionalCertificates">Any additional certificates to assist in building a certificate chain.</param>
         public AuthenticodeKeyVaultSigner(AsymmetricAlgorithm signingAlgorithm, X509Certificate2 signingCertificate,
             HashAlgorithmName fileDigestAlgorithm, TimeStampConfiguration timeStampConfiguration,
-            X509Certificate2Collection additionalCertificates = null)
+            X509Certificate2Collection? additionalCertificates = null)
         {
             _fileDigestAlgorithm = fileDigestAlgorithm;
             _signingCertificate = signingCertificate ?? throw new ArgumentNullException(nameof(signingCertificate));
@@ -44,10 +44,12 @@ namespace AzureSign.Core
             _signingAlgorithm = signingAlgorithm ?? throw new ArgumentNullException(nameof(signingAlgorithm));
             _certificateStore = MemoryCertificateStore.Create();
             _chain = new X509Chain();
-            if (additionalCertificates != null)
+
+            if (additionalCertificates is not null)
             {
                 _chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
             }
+
             //We don't care about the trustworthiness of the cert. We just want a chain to sign with.
             _chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
 
@@ -73,15 +75,18 @@ namespace AzureSign.Core
         /// <param name="logger">An optional logger to capture signing operations.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger logger = null)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
         {
-            static void CopyAndNullTerminate(ReadOnlySpan<char> str, Span<char> destination)
+            static char[] NullTerminate(ReadOnlySpan<char> str)
             {
-                str.CopyTo(destination);
-                destination[destination.Length - 1] = '\0';
+                char[] result = new char[str.Length + 1];
+                str.CopyTo(result);
+                result[result.Length - 1] = '\0';
+                return result;
             }
 
-            var flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
+            SignerSignEx3Flags flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
+
             if (pageHashing == true)
             {
                 flags |= SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
@@ -93,7 +98,8 @@ namespace AzureSign.Core
 
             SignerSignTimeStampFlags timeStampFlags;
             ReadOnlySpan<byte> timestampAlgorithmOid;
-            string timestampUrl;
+            string? timestampUrl;
+
             switch (_timeStampConfiguration.Type)
             {
                 case TimeStampType.Authenticode:
@@ -107,32 +113,17 @@ namespace AzureSign.Core
                     timestampUrl = _timeStampConfiguration.Url;
                     break;
                 default:
-                    timeStampFlags = 0;
+                    timeStampFlags = default;
                     timestampAlgorithmOid = default;
                     timestampUrl = null;
                     break;
             }
 
-            Span<char> pathWithNull = path.Length > 0x100 ? new char[path.Length + 1] : stackalloc char[path.Length + 1];
-            Span<char> descriptionBuffer = description.Length > 0x100 ? new char[description.Length + 1] : stackalloc char[description.Length + 1];
-            Span<char> descriptionUrlBuffer = descriptionUrl.Length > 0x100 ? new char[descriptionUrl.Length + 1] : stackalloc char[descriptionUrl.Length + 1];
-            Span<char> timestampUrlBuffer = timestampUrl == null ?
-                default : timestampUrl.Length > 0x100 ?
-                new char[timestampUrl.Length + 1] : stackalloc char[timestampUrl.Length + 1];
-
-            CopyAndNullTerminate(path, pathWithNull);
-            CopyAndNullTerminate(description, descriptionBuffer);
-            CopyAndNullTerminate(descriptionUrl, descriptionUrlBuffer);
-            if (timestampUrl != null)
-            {
-                CopyAndNullTerminate(timestampUrl.AsSpan(), timestampUrlBuffer);
-            }
-
             fixed (byte* pTimestampAlgorithm = timestampAlgorithmOid)
-            fixed (char* pTimestampUrl = timestampUrlBuffer)
-            fixed (char* pPath = pathWithNull)
-            fixed (char* pDescription = descriptionBuffer)
-            fixed (char* pDescriptionUrl = descriptionUrlBuffer)
+            fixed (char* pTimestampUrl = timestampUrl)
+            fixed (char* pPath = NullTerminate(path))
+            fixed (char* pDescription = NullTerminate(description))
+            fixed (char* pDescriptionUrl = NullTerminate(descriptionUrl))
             {
                 var fileInfo = new SIGNER_FILE_INFO(pPath, default);
                 var subjectIndex = 0u;
