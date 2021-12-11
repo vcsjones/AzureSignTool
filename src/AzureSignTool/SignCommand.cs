@@ -2,7 +2,7 @@
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.Extensions.Logging.Console;
 using RSAKeyVaultProvider;
 
 using System;
@@ -190,10 +190,11 @@ namespace AzureSignTool
 
         private void ConfigureLogging(ILoggingBuilder builder)
         {
-            builder.AddConsole(console => {
+            builder.AddSimpleConsole(console => {
                 console.IncludeScopes = true;
-                console.DisableColors = !Colors;
+                console.ColorBehavior = Colors ? LoggerColorBehavior.Enabled : LoggerColorBehavior.Disabled;
             });
+
             builder.SetMinimumLevel(LogLevel);
         }
 
@@ -293,7 +294,7 @@ namespace AzureSignTool
                         {
                             return state;
                         }
-                        using (var loopScope = logger.BeginScope("File: {Id}", filePath))
+                        using (logger.BeginScope("File: {Id}", filePath))
                         {
                             logger.LogInformation("Signing file.");
 

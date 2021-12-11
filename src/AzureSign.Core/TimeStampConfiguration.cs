@@ -10,7 +10,7 @@ namespace AzureSign.Core
         /// <summary>
         /// The URL to the timestamp authority.
         /// </summary>
-        public string Url { get; }
+        public string? Url { get; }
 
         /// <summary>
         /// The digest algorithm the timestamp service authority should use on timestamp signatures.
