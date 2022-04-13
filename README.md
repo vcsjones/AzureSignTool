@@ -127,6 +127,9 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 	the system will use the default based on the number of available processor threads. Setting this value to "1" disable concurrent
 	signing.
 
+* `--signing-throttle` [short: `-st`, required: no]: When specified instructs the tool to throttle the rate of
+    signing operations. Cannot be combined with -mdop (other than with a value of 1). The value is the minimum time between requests in seconds.
+
 In most circumances, using the defaults for page hashing is recommended, which can be done by simply omitting both of the parameters.
 
 ## Supported Formats
