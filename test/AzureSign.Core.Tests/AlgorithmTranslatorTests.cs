@@ -23,7 +23,7 @@ namespace AzureSign.Core.Tests
             expectedBytes.Fill(0);
             Encoding.ASCII.GetBytes(oid, expectedBytes);
             var actualBytes = AlgorithmTranslator.HashAlgorithmToOidAsciiTerminated(name);
-            Assert.True(expectedBytes.SequenceEqual(actualBytes), "ExpectedBytes do not equal actual bytes.");
+            Assert.True(expectedBytes.SequenceEqual(Encoding.ASCII.GetBytes(actualBytes)), "ExpectedBytes do not equal actual bytes.");
         }
 
         [Fact]
