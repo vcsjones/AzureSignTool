@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>
