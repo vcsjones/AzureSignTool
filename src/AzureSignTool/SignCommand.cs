@@ -30,7 +30,7 @@ namespace AzureSignTool
         [Option("-kvs | --azure-key-vault-client-secret", "The Client Secret to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
         public (bool Present, string Value) KeyVaultClientSecret { get; set; }
 
-        [Option("-kvt | --azure-key-vault-tenant-id", "The Tenand Id to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
+        [Option("-kvt | --azure-key-vault-tenant-id", "The Tenant Id to authenticate to the Azure Key Vault.", CommandOptionType.SingleValue)]
         public (bool Present, string Value) KeyVaultTenantId { get; set; }
 
         [Option("-kvc | --azure-key-vault-certificate", "The name of the certificate in Azure Key Vault.", CommandOptionType.SingleValue), Required]
@@ -356,7 +356,7 @@ namespace AzureSignTool
                                     logger.LogError("The Publisher Identity in the AppxManifest.xml does not match the subject on the certificate.");
                                     break;
                                 case TRUST_E_SUBJECT_FORM_UNKNOWN:
-                                    logger.LogError("The file cannot be signed because it is not a recoginized file type for signing or it is corrupt.");
+                                    logger.LogError("The file cannot be signed because it is not a recognized file type for signing or it is corrupt.");
                                     break;
                             }
 
@@ -440,7 +440,7 @@ namespace AzureSignTool
             }
             catch (CryptographicException e)
             {
-                logger.LogError(e, "An exception occured while including an additional certificate.");
+                logger.LogError(e, "An exception occurred while including an additional certificate.");
                 return e;
             }
 
