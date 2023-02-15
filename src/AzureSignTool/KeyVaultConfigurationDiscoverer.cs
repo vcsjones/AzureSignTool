@@ -29,6 +29,12 @@ namespace AzureSignTool
             {
                 credential = new AccessTokenCredential(configuration.AzureAccessToken);
             }
+            else if (!string.IsNullOrWhiteSpace(configuration.AzureCertificateThumbprint))
+            {
+                string certificateThumbPrint = configuration.AzureCertificateThumbprint;
+                X509Certificate2 clientCertificate = LoadCertificateByThumbprint(certificateThumbPrint, StoreLocation.CurrentUser);
+                credential = new ClientCertificateCredential(configuration.AzureTenantId, configuration.AzureClientId, clientCertificate);
+            }
             else
             {
                 if (string.IsNullOrWhiteSpace(configuration.AzureAuthority))
@@ -81,6 +87,30 @@ namespace AzureSignTool
             }
 
             return new AzureKeyVaultMaterializedConfiguration(credential, certificate, keyId);
+        }
+
+        private X509Certificate2 LoadCertificateByThumbprint(string thumbprint, System.Security.Cryptography.X509Certificates.StoreLocation storeLocation)
+        {
+            X509Store certStore = new X509Store(StoreName.My, storeLocation);
+            certStore.Open(OpenFlags.ReadOnly);
+            try
+            {
+                X509Certificate2Collection certCollection = certStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                if (certCollection.Count > 0)
+                {
+                    X509Certificate2 cert = certCollection[0];
+                    return cert;
+                }
+                else
+                {
+                    _logger.LogTrace($"Could not find certificate with thumbprint {thumbprint} in store {storeLocation}");
+                    return null;
+                }
+            }
+            finally
+            {
+                certStore.Close();
+            }
         }
     }
 }
