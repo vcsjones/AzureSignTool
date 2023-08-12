@@ -8,6 +8,49 @@ A lightweight guide on how to use this tool in context.
 * Obtain a certificate.
 * Within your Azure subscription, create an Azure KeyVault. Note the URL of the KeyVault; this will be your input to `-kvu` later.
 * Upload your certificate into the KeyVault, giving it a name.
+* Do you have service connection with service principal authentication(or ready to create one)?
+  * Yes - Much simpler [option A](#a--using-existing-service-connection-with-service-principal-authentication) is for you
+  * No - Use [option B](#b--using-custom-application-principal)
+
+### A) Using existing service connection with service principal authentication
+
+* Go to KeyVault's the `Access Policies` section.
+* Create an access policy that applies to your connection service principal.
+* For the access policy, set the below permissions:
+
+| Area | Permissions |
+| ---- | ----------- |
+| Key | Verify, Sign, Get, List |
+| Secret | Get, List |
+| Certificate | Get, List |
+
+* In your Azure DevOps build configuration, add a step to install the global tool:
+
+```yml
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'custom'
+    custom: 'tool'
+    arguments: 'install --global azuresigntool'
+  displayName: Install AzureSignTool
+```
+
+* In your Azure DevOps build configuration, add a step to use the tool, with the values we captured earlier in the bracketed placeholders:
+
+```yml
+- task: AzureCLI@2
+  displayName: 'Sign outputted .exe with global AzureSignTool'
+  inputs:
+    scriptType: ps
+    scriptLocation: inlineScript
+    azureSubscription: '[YOUR_CONNECTION_NAME]'
+    addSpnToEnvironment: true
+    inlineScript: |
+      AzureSignTool sign -du "[YOUR_URL]" -kvu "https://[VAULT_ID].vault.azure.net -kvi $Env:servicePrincipalId -kvt $Env:tenantId -kvs $Env:servicePrincipalKey -kvc "[REDACTED_CERT_NAME]" -v [FILES_YOU_WANT_TO_SIGN]
+```
+
+### B) Using custom Application Principal
+
 * Within your Azure AD, register an application with a name (no need to worry about the redirect URL).
 * In the overview screen for the application, note the Application ID -- this will be the client ID input into the `-kvi` parameter later.
 * Also note the Directory ID -- this will be the tenant ID input into the `-kvt` parameter later.
