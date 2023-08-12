@@ -355,12 +355,20 @@ namespace AzureSignTool
             }
         }
 
-        private static bool IsSigned(string filePath)
+        private static readonly string CodeSigningOid = "1.3.6.1.5.5.7.3.3";
+         
+        public static bool IsSigned(string filePath)
         {
             try
             {
-                _ = X509Certificate.CreateFromSignedFile(filePath);
-                return true;
+                var certificate =  new X509Certificate2(X509Certificate.CreateFromSignedFile(filePath));
+
+                // check if file contains a code signing cert. 
+                // Note that this does not check validity of the signature
+                return certificate.Extensions
+                    .Select(extension => extension as X509EnhancedKeyUsageExtension)
+                    .Select(enhancedExtension => enhancedExtension?.EnhancedKeyUsages)
+                    .Any(oids => oids?[CodeSigningOid] != null);
             }
             catch (CryptographicException)
             {
