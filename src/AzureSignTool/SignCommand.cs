@@ -86,6 +86,9 @@ namespace AzureSignTool
         [Option("-mdop | --max-degree-of-parallelism", "The maximum number of concurrent signing operations.", CommandOptionType.SingleValue), Range(-1, int.MaxValue)]
         public int? MaxDegreeOfParallelism { get; set; }
 
+        [Option("-st | --signing-throttle", "Controls the rate of signing operations. If this value is specified it indicates the number of seconds to hold off between each signing operation. Only valid when parallelism is disabled.", CommandOptionType.SingleValue), Range(-1, int.MaxValue)]
+        public int? SigningThrottle { get; set; }
+
         [Option("--colors", "Enable color output on the command line.", CommandOptionType.NoValue)]
         public bool Colors { get; set; } = false;
 
@@ -96,7 +99,9 @@ namespace AzureSignTool
         [Argument(0, "file", "The path to the file.")]
         public string[] Files { get; set; } = Array.Empty<string>();
 
+        private static DateTime _lastSigningOperation;
         private HashSet<string> _allFiles;
+
         public HashSet<string> AllFiles
         {
             get
@@ -152,6 +157,11 @@ namespace AzureSignTool
                 return new ValidationResult("Cannot use '--timestamp-rfc3161' and '--timestamp-authenticode' options together.", new[] { nameof(Rfc3161Timestamp), nameof(AuthenticodeTimestamp) });
             }
 
+            if (SigningThrottle is > 0 && MaxDegreeOfParallelism > 1)
+            {
+                return new ValidationResult("Cannot use '--signing-throttle' and '--max-degree-of-parallelism' options together.");
+            }
+
             if (KeyVaultClientId.Present && !KeyVaultClientSecret.Present)
             {
                 return new ValidationResult("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.", new[] { nameof(KeyVaultClientSecret) });
@@ -169,7 +179,7 @@ namespace AzureSignTool
             {
                 return new ValidationResult("At least one file must be specified to sign.");
             }
-            foreach(var file in AllFiles)
+            foreach (var file in AllFiles)
             {
                 if (!File.Exists(file))
                 {
@@ -254,6 +264,13 @@ namespace AzureSignTool
                 {
                     performPageHashing = false;
                 }
+                if (SigningThrottle is > 0)
+                {
+                    logger?.LogTrace($"Forcing MaxDegreeOfParallelism to 1 because signing throttling is requested.");
+                    MaxDegreeOfParallelism = 1;
+                    _lastSigningOperation = DateTime.Now.AddSeconds(SigningThrottle.Value * -1);
+                }
+
                 var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
                 var materializedResult = await configurationDiscoverer.Materialize(configuration);
                 AzureKeyVaultMaterializedConfiguration materialized;
@@ -279,6 +296,7 @@ namespace AzureSignTool
                 {
                     options.MaxDegreeOfParallelism = MaxDegreeOfParallelism.Value;
                 }
+
                 logger.LogTrace("Creating context");
 
                 using (var keyVault =  RSAFactory.Create(materialized.TokenCredential, materialized.KeyId, materialized.PublicCertificate))
@@ -294,6 +312,33 @@ namespace AzureSignTool
                         {
                             return state;
                         }
+
+                        if (SigningThrottle is > 0)
+                        {
+                            DateTime goTime = _lastSigningOperation.AddSeconds(SigningThrottle.Value);
+
+                            if (goTime >= DateTime.Now)
+                            {
+                                logger.LogTrace("Holding off between signing requests until {time}.", goTime);
+
+                                while (goTime >= DateTime.Now && !cancellationSource.IsCancellationRequested)
+                                {
+                                    Thread.Sleep(500);
+                                }
+
+                                logger.LogTrace("Continuing signing operation.");
+                            }
+
+                            if (cancellationSource.IsCancellationRequested)
+                            {
+                                pls.Stop();
+                            }
+                            if (pls.IsStopped)
+                            {
+                                return state;
+                            }
+                        }
+
                         using (logger.BeginScope("File: {Id}", filePath))
                         {
                             logger.LogInformation("Signing file.");
@@ -314,6 +359,8 @@ namespace AzureSignTool
                                     logger.LogError("The file cannot be signed because it is not a recognized file type for signing or it is corrupt.");
                                     break;
                             }
+
+                            _lastSigningOperation = DateTime.Now;
 
                             if (result == S_OK)
                             {

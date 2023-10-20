@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace AzureSign.Core
 {
@@ -19,20 +20,19 @@ namespace AzureSign.Core
         private readonly TimeStampConfiguration _timeStampConfiguration;
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
-        private readonly SignCallback _signCallback;
-
+        private readonly SignCallback _signCallback;    
 
         /// <summary>
         /// Creates a new instance of <see cref="AuthenticodeKeyVaultSigner" />.
         /// </summary>
         /// <param name="signingAlgorithm">
-        /// An instance of an asymmetric algorithm that will be used to sign. It must support signing with
-        /// a private key.
+        ///     An instance of an asymmetric algorithm that will be used to sign. It must support signing with
+        ///     a private key.
         /// </param>
         /// <param name="signingCertificate">The X509 public certificate for the <paramref name="signingAlgorithm"/>.</param>
         /// <param name="fileDigestAlgorithm">The digest algorithm to sign the file.</param>
         /// <param name="timeStampConfiguration">The timestamp configuration for timestamping the file. To omit timestamping,
-        /// use <see cref="TimeStampConfiguration.None"/>.</param>
+        ///     use <see cref="TimeStampConfiguration.None"/>.</param>
         /// <param name="additionalCertificates">Any additional certificates to assist in building a certificate chain.</param>
         public AuthenticodeKeyVaultSigner(AsymmetricAlgorithm signingAlgorithm, X509Certificate2 signingCertificate,
             HashAlgorithmName fileDigestAlgorithm, TimeStampConfiguration timeStampConfiguration,
@@ -66,16 +66,17 @@ namespace AzureSign.Core
         }
 
         /// <summary>Authenticode signs a file.</summary>
-        /// <param name="pageHashing">True if the signing process should try to include page hashing, otherwise false.
-        /// Use <c>null</c> to use the operating system default. Note that page hashing still may be disabled if the
-        /// Subject Interface Package does not support page hashing.</param>
-        /// <param name="descriptionUrl">A URL describing the signature or the signer.</param>
-        /// <param name="description">The description to apply to the signature.</param>
         /// <param name="path">The path to the file to signed.</param>
+        /// <param name="description">The description to apply to the signature.</param>
+        /// <param name="descriptionUrl">A URL describing the signature or the signer.</param>
+        /// <param name="pageHashing">True if the signing process should try to include page hashing, otherwise false.
+        ///     Use <c>null</c> to use the operating system default. Note that page hashing still may be disabled if the
+        ///     Subject Interface Package does not support page hashing.</param>
         /// <param name="logger">An optional logger to capture signing operations.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description,
+            ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
         {
             static char[] NullTerminate(ReadOnlySpan<char> str)
             {
@@ -197,6 +198,7 @@ namespace AzureSign.Core
                         Marshal.Release(state);
                     }
                 }
+
                 return result;
             }
         }
