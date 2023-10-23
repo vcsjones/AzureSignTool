@@ -1,0 +1,13 @@
+﻿CertOpenStore
+CertCloseStore
+SignerSignEx
+SignerFreeSignerContext
+SignerSignEx3
+PFN_AUTHENTICODE_DIGEST_SIGN
+E_INVALIDARG
+S_OK
+
+// Not yet documented:
+
+// APPX_SIP_CLIENT_DATA
+// SIGNER_SIGN_EX3_PARAMS
