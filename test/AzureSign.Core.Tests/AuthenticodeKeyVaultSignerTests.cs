@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -27,6 +27,10 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: false);
+            Assert.Equal(0, result);
         }
 
         [Theory]
@@ -37,6 +41,10 @@ namespace AzureSign.Core.Tests
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: false);
             Assert.Equal(0, result);
         }
 
@@ -50,6 +58,10 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: false);
+            Assert.Equal(0, result);
         }
 
         [Theory]
@@ -61,6 +73,10 @@ namespace AzureSign.Core.Tests
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: false);
             Assert.Equal(0, result);
         }
 
@@ -74,6 +90,10 @@ namespace AzureSign.Core.Tests
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
+            Assert.Equal(0, result);
+            result = signer.SignFile(fileToSign, null, null, null, appendSignature: false);
             Assert.Equal(0, result);
         }
 
