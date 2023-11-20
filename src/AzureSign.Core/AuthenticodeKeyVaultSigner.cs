@@ -1,4 +1,4 @@
-﻿using AzureSign.Core.Interop;
+using AzureSign.Core.Interop;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
@@ -73,9 +73,10 @@ namespace AzureSign.Core
         /// <param name="description">The description to apply to the signature.</param>
         /// <param name="path">The path to the file to signed.</param>
         /// <param name="logger">An optional logger to capture signing operations.</param>
+        /// <param name="appendSignature">Instruct if should append the new signature to existing, if false - remove existing signatures.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null, bool appendSignature = false)
         {
             static char[] NullTerminate(ReadOnlySpan<char> str)
             {
@@ -94,6 +95,11 @@ namespace AzureSign.Core
             else if (pageHashing == false)
             {
                 flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+            }
+
+            if (appendSignature)
+            {
+                flags |= SignerSignEx3Flags.SIG_APPEND;
             }
 
             SignerSignTimeStampFlags timeStampFlags;
