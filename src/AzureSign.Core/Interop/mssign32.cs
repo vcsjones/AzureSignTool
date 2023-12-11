@@ -3,10 +3,32 @@ using System.Runtime.InteropServices;
 
 namespace AzureSign.Core.Interop
 {
-    internal static class mssign32
+    internal interface Imssign32
     {
-        [method: DllImport(nameof(mssign32), EntryPoint = "SignerSignEx3", CallingConvention = CallingConvention.Winapi)]
-        public static unsafe extern int SignerSignEx3
+        unsafe int SignerSignEx3 (
+            [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
+            [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
+            [param: In] SIGNER_CERT* pSignerCert,
+            [param: In] SIGNER_SIGNATURE_INFO* pSignatureInfo,
+            [param: In] IntPtr pProviderInfo,
+            [param: In] SignerSignTimeStampFlags dwTimestampFlags,
+            [param: In] byte* pszTimestampAlgorithmOid,
+            [param: In] char* pwszHttpTimeStamp,
+            [param: In] IntPtr psRequest,
+            [param: In] void* pSipData,
+            [param: In] IntPtr* ppSignerContext,
+            [param: In] IntPtr pCryptoPolicy,
+            [param: In] SIGN_INFO* pSignInfo,
+            [param: In] IntPtr pReserved
+        );
+        unsafe int SignerFreeSignerContext(
+            [param: In] IntPtr pSignerContext
+        );
+    }
+    internal class mssign32 : Imssign32
+    {
+        [method: DllImport(@$"{nameof(mssign32)}", EntryPoint = "SignerSignEx3", CallingConvention = CallingConvention.Winapi)]
+        static unsafe extern int ImportedSignerSignEx3
         (
             [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
             [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
@@ -25,9 +47,106 @@ namespace AzureSign.Core.Interop
         );
 
         [method: DllImport(nameof(mssign32), CallingConvention = CallingConvention.Winapi)]
-        public static extern int SignerFreeSignerContext(
+        static extern int ImportedSignerFreeSignerContext(
             [param: In] IntPtr pSignerContext
         );
+        public unsafe int SignerSignEx3(
+           [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
+           [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
+           [param: In] SIGNER_CERT* pSignerCert,
+           [param: In] SIGNER_SIGNATURE_INFO* pSignatureInfo,
+           [param: In] IntPtr pProviderInfo,
+           [param: In] SignerSignTimeStampFlags dwTimestampFlags,
+           [param: In] byte* pszTimestampAlgorithmOid,
+           [param: In] char* pwszHttpTimeStamp,
+           [param: In] IntPtr psRequest,
+           [param: In] void* pSipData,
+           [param: In] IntPtr* ppSignerContext,
+           [param: In] IntPtr pCryptoPolicy,
+           [param: In] SIGN_INFO* pSignInfo,
+           [param: In] IntPtr pReserved
+        )
+        {
+            return ImportedSignerSignEx3(dwFlags, pSubjectInfo, pSignerCert, pSignatureInfo, pProviderInfo, dwTimestampFlags, pszTimestampAlgorithmOid, pwszHttpTimeStamp, psRequest, pSipData, ppSignerContext, pCryptoPolicy, pSignInfo, pReserved);
+        }
+        public int SignerFreeSignerContext(
+                       [param: In] IntPtr pSignerContext
+                   )
+        {
+            return ImportedSignerFreeSignerContext(pSignerContext);
+        }
+    }
+    internal class mssign32win10 : Imssign32
+    {
+        [method: DllImport(@$"mssign11snapshot\{nameof(mssign32)}", EntryPoint = "SignerSignEx3", CallingConvention = CallingConvention.Winapi)]
+        static unsafe extern int ImportedSignerSignEx3
+        (
+            [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
+            [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
+            [param: In] SIGNER_CERT* pSignerCert,
+            [param: In] SIGNER_SIGNATURE_INFO* pSignatureInfo,
+            [param: In] IntPtr pProviderInfo,
+            [param: In] SignerSignTimeStampFlags dwTimestampFlags,
+            [param: In] byte* pszTimestampAlgorithmOid,
+            [param: In] char* pwszHttpTimeStamp,
+            [param: In] IntPtr psRequest,
+            [param: In] void* pSipData,
+            [param: In] IntPtr* ppSignerContext,
+            [param: In] IntPtr pCryptoPolicy,
+            [param: In] SIGN_INFO* pSignInfo,
+            [param: In] IntPtr pReserved
+        );
+
+        [method: DllImport(@$"mssign11snapshot\{nameof(mssign32)}", CallingConvention = CallingConvention.Winapi)]
+        static extern int ImportedSignerFreeSignerContext(
+            [param: In] IntPtr pSignerContext
+        );
+
+        public unsafe int SignerSignEx3(
+           [param: In, MarshalAs(UnmanagedType.U4)] SignerSignEx3Flags dwFlags,
+           [param: In] SIGNER_SUBJECT_INFO* pSubjectInfo,
+           [param: In] SIGNER_CERT* pSignerCert,
+           [param: In] SIGNER_SIGNATURE_INFO* pSignatureInfo,
+           [param: In] IntPtr pProviderInfo,
+           [param: In] SignerSignTimeStampFlags dwTimestampFlags,
+           [param: In] byte* pszTimestampAlgorithmOid,
+           [param: In] char* pwszHttpTimeStamp,
+           [param: In] IntPtr psRequest,
+           [param: In] void* pSipData,
+           [param: In] IntPtr* ppSignerContext,
+           [param: In] IntPtr pCryptoPolicy,
+           [param: In] SIGN_INFO* pSignInfo,
+           [param: In] IntPtr pReserved
+        )
+        {
+            return ImportedSignerSignEx3(dwFlags, pSubjectInfo, pSignerCert, pSignatureInfo, pProviderInfo, dwTimestampFlags, pszTimestampAlgorithmOid, pwszHttpTimeStamp, psRequest, pSipData, ppSignerContext, pCryptoPolicy, pSignInfo, pReserved);
+        }
+        public int SignerFreeSignerContext(
+                       [param: In] IntPtr pSignerContext
+                   )
+        {
+            return ImportedSignerFreeSignerContext(pSignerContext);
+        }
+    }
+
+    internal static class mssign32resolver
+    {
+        public static bool IsWindows11OrGreater => 
+            Environment.OSVersion.Version.Major >= 10 &&
+            Environment.OSVersion.Version.Minor >= 0 &&
+            Environment.OSVersion.Version.Build >= 22000;
+
+        public static Imssign32 Resolve(bool appendSignature)
+        {
+            if (IsWindows11OrGreater || !appendSignature)
+            {
+                return new mssign32();
+            }
+            else
+            {
+                return new mssign32win10();
+            }
+        }
     }
 
     [type: StructLayout(LayoutKind.Sequential)]

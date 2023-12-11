@@ -18,4 +18,14 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="mssign11snapshot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="mssign11snapshot\mssign32.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

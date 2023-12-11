@@ -73,9 +73,10 @@ namespace AzureSign.Core
         /// <param name="description">The description to apply to the signature.</param>
         /// <param name="path">The path to the file to signed.</param>
         /// <param name="logger">An optional logger to capture signing operations.</param>
+        /// <param name="appendSignature">Instruct if should append the new signature to existing, if false - remove existing signatures.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null)
+        public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null, bool appendSignature = false)
         {
             static char[] NullTerminate(ReadOnlySpan<char> str)
             {
@@ -94,6 +95,21 @@ namespace AzureSign.Core
             else if (pageHashing == false)
             {
                 flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+            }
+
+            if (appendSignature)
+            {
+                flags |= SignerSignEx3Flags.SIG_APPEND;
+                if (_timeStampConfiguration.Type == TimeStampType.Authenticode)
+                {
+                    // E_INVALIDARG is expected from SignerSignEx3.
+                    logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
+                }
+
+                if (!mssign32resolver.IsWindows11OrGreater)
+                {
+                    logger?.LogWarning("Loading windows 11 mssign32.dll from snapshot");
+                }
             }
 
             SignerSignTimeStampFlags timeStampFlags;
@@ -167,7 +183,8 @@ namespace AzureSign.Core
                         break;
                 }
 
-                logger?.LogTrace("Calling SignerSignEx3");
+                logger?.LogTrace($"Calling SignerSignEx3 with flags: {flags}");
+                var mssign32 = mssign32resolver.Resolve(appendSignature);
                 var result = mssign32.SignerSignEx3
                 (
                     flags,
