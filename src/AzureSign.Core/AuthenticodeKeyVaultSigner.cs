@@ -1,4 +1,4 @@
-using AzureSign.Core.Interop;
+﻿using AzureSign.Core.Interop;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
@@ -99,6 +99,18 @@ namespace AzureSign.Core
 
             if (appendSignature)
             {
+                // OperatingSystem.IsWindowsVersionAtLeast is not yet introduced in .Net Standard 2.0
+                bool isWindows11OrGreater = Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Minor >= 0 && Environment.OSVersion.Version.Build >= 22000;
+                if (!isWindows11OrGreater)
+                {
+                    // must throw, if continued SignerSignEx3 might return no error, but fail with the task, we must prevent this silent corruption.
+                    throw new PlatformNotSupportedException("Appending signatures requires Windows 11 or later.");
+                }
+                if (_timeStampConfiguration.Type == TimeStampType.Authenticode)
+                {
+                    // E_INVALIDARG is expected from SignerSignEx3, no need to override this error, log warning for troubleshooting
+                    logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
+                }
                 flags |= SignerSignEx3Flags.SIG_APPEND;
             }
 
@@ -173,7 +185,7 @@ namespace AzureSign.Core
                         break;
                 }
 
-                logger?.LogTrace("Calling SignerSignEx3");
+                logger?.LogTrace($"Calling SignerSignEx3 with flags: {flags}");
                 var result = mssign32.SignerSignEx3
                 (
                     flags,

@@ -1,4 +1,4 @@
-using AzureSign.Core;
+﻿using AzureSign.Core;
 using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -172,7 +172,16 @@ namespace AzureSignTool
             {
                 return new ValidationResult("At least one file must be specified to sign.");
             }
-            foreach(var file in AllFiles)
+            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            {
+                return new ValidationResult("'--append-signature' requires Windows 11 or later.", new[] { nameof(AppendSignature) });
+            }
+            if (AppendSignature && AuthenticodeTimestamp.Present)
+            {
+                return new ValidationResult("Cannot use '--append-signature' and '--timestamp-authenticode' options together.", new[] { nameof(AppendSignature), nameof(AuthenticodeTimestamp) });
+            }
+
+            foreach (var file in AllFiles)
             {
                 if (!File.Exists(file))
                 {
