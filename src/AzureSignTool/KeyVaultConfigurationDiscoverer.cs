@@ -31,7 +31,18 @@ namespace AzureSignTool
             }
             else
             {
-                credential = new ClientSecretCredential(configuration.AzureTenantId, configuration.AzureClientId, configuration.AzureClientSecret);
+                if (string.IsNullOrWhiteSpace(configuration.AzureAuthority))
+                {
+                    credential = new ClientSecretCredential(configuration.AzureTenantId, configuration.AzureClientId, configuration.AzureClientSecret);
+                }
+                else
+                {
+                    ClientSecretCredentialOptions options = new()
+                    {
+                        AuthorityHost = AuthorityHostNames.GetUriForAzureAuthorityIdentifier(configuration.AzureAuthority)
+                    };
+                    credential = new ClientSecretCredential(configuration.AzureTenantId, configuration.AzureClientId, configuration.AzureClientSecret, options);
+                }
             }
 
 

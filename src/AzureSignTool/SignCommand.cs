@@ -96,6 +96,10 @@ namespace AzureSignTool
         [Option("-as | --append-signature", "Append the signature, has no effect with --skip-signed.", CommandOptionType.NoValue)]
         public bool AppendSignature { get; set; } = false;
 
+        [Option("-au | --azure-authority", "The Azure Authority for Azure Key Vault.", CommandOptionType.SingleValue)]
+        [AllowedValues("china", "germany", "gov", "public", IgnoreCase = true)]
+        public string AzureAuthority { get; set; }
+
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
         public string[] Files { get; set; } = [];
@@ -240,6 +244,7 @@ namespace AzureSignTool
                     AzureAccessToken = KeyVaultAccessToken.Value,
                     AzureClientSecret = KeyVaultClientSecret.Value,
                     ManagedIdentity = UseManagedIdentity,
+                    AzureAuthority = AzureAuthority,
                 };
 
                 TimeStampConfiguration timeStampConfiguration;
