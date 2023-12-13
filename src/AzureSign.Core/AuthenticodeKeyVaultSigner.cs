@@ -77,7 +77,7 @@ namespace AzureSign.Core
         /// <param name="appendSignature"><see langword="true"/> if the signature should be appended to an existing signature. When <see langword="false"/>, any existing signatures will be replaced.</param>
         /// <returns>A HRESULT indicating the result of the signing operation. S_OK, or zero, is returned if the signing
         /// operation completed successfully.</returns>
-        <exception cref="PlatformNotSupportedException"><paramref name="appendSignature"/> was set to <see langword="true"/> however the current operating system does not support appending signatures.</exception>
+        /// <exception cref="PlatformNotSupportedException"><paramref name="appendSignature"/> was set to <see langword="true"/> however the current operating system does not support appending signatures.</exception>
         public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null, bool appendSignature = false)
         {
             static char[] NullTerminate(ReadOnlySpan<char> str)
