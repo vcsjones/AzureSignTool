@@ -30,6 +30,30 @@ namespace AzureSignTool.Tests
             Assert.NotEqual(0, ExitCode);
         }
 
+        [Fact]
+        public void ShowVersionOnOutputForHelp()
+        {
+            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
+                return Program.Main([]);
+            });
+
+            Assert.Matches(@"^\d\.\d\.\d", StdOut);
+            Assert.NotEqual(0, ExitCode);
+        }
+
+        [Fact]
+        public void ShowVersionOnOutputVersionArg()
+        {
+            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
+                return Program.Main(["--version"]);
+            });
+
+            // This is from https://semver.org/
+            const string SemVerRegex = @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$";
+            Assert.Matches(SemVerRegex, StdOut);
+            Assert.Equal(0, ExitCode);
+        }
+
         private static (string StdOut, string StdErr, T Result) Capture<T>(Func<T> act)
         {
             lock (_sync)
