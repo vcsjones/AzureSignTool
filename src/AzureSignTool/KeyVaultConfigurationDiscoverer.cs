@@ -44,17 +44,23 @@ namespace AzureSignTool
                 _logger.LogTrace($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.");
                 azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName).ConfigureAwait(false)).Value;
                 _logger.LogTrace($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.");
-                
+
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }
             catch (Exception e)
             {
                 _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate. Error message: {e.Message}.");
                 _logger.LogTrace(e.ToString());
-                
+
                 return e;
             }
             var keyId = azureCertificate.KeyId;
+
+            if (keyId is null)
+            {
+                return new InvalidOperationException("The Azure certificate does not have an associated private key.");
+            }
+
             return new AzureKeyVaultMaterializedConfiguration(credential, certificate, keyId);
         }
     }
