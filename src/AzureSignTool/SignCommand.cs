@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using static AzureSignTool.HRESULT;
+using AllowedValuesAttribute = McMaster.Extensions.CommandLineUtils.AllowedValuesAttribute;
 
 namespace AzureSignTool
 {
@@ -63,7 +64,7 @@ namespace AzureSignTool
         public (bool Present, string Uri) AuthenticodeTimestamp { get; set; }
 
         [Option("-ac | --additional-certificates", "Specify one or more certificates to include in the public certificate chain.", CommandOptionType.MultipleValue), FileExists]
-        public string[] AdditionalCertificates { get; set; } = Array.Empty<string>();
+        public string[] AdditionalCertificates { get; set; } = [];
 
         [Option("-v | --verbose", "Include additional output.", CommandOptionType.NoValue)]
         public bool Verbose { get; set; }
@@ -97,7 +98,7 @@ namespace AzureSignTool
 
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
-        public string[] Files { get; set; } = Array.Empty<string>();
+        public string[] Files { get; set; } = [];
 
         private HashSet<string> _allFiles;
         public HashSet<string> AllFiles
@@ -135,7 +136,7 @@ namespace AzureSignTool
             }
         }
 
-        private ValidationResult OnValidate(ValidationContext context, CommandLineContext appContext)
+        private ValidationResult OnValidate()
         {
             if (PageHashing && NoPageHashing)
             {
@@ -191,7 +192,7 @@ namespace AzureSignTool
             return ValidationResult.Success;
         }
 
-        public int OnValidationError(ValidationResult result, CommandLineApplication<SignCommand> command, IConsole console)
+        public static int OnValidationError(ValidationResult result, CommandLineApplication<SignCommand> command, IConsole console)
         {
             console.ForegroundColor = ConsoleColor.Red;
             console.Error.WriteLine(result.ErrorMessage);
@@ -210,7 +211,7 @@ namespace AzureSignTool
             builder.SetMinimumLevel(LogLevel);
         }
 
-        public async Task<int> OnExecuteAsync(CommandLineApplication app, IConsole console)
+        public async Task<int> OnExecuteAsync(IConsole console)
         {
             using (var loggerFactory = LoggerFactory.Create(ConfigureLogging))
             {
@@ -335,7 +336,7 @@ namespace AzureSignTool
                             }
                             else
                             {
-                                logger.LogError($"Signing failed with error {result:X2}.");
+                                logger.LogError("Signing failed with error {result}.", $"{result:X2}");
                                 if (!ContinueOnError || AllFiles.Count == 1)
                                 {
                                     logger.LogInformation("Stopping file signing.");
@@ -351,8 +352,9 @@ namespace AzureSignTool
                         Interlocked.Add(ref succeeded, result.succeeded);
                     });
                 }
-                logger.LogInformation($"Successful operations: {succeeded}");
-                logger.LogInformation($"Failed operations: {failed}");
+                logger.LogInformation("Successful operations: {succeeded}", succeeded);
+                logger.LogInformation("Failed operations: {failed}", failed);
+
                 if (failed > 0 && succeeded == 0)
                 {
                     return E_ALL_FAILED;
@@ -369,14 +371,14 @@ namespace AzureSignTool
         }
 
         private static readonly string CodeSigningOid = "1.3.6.1.5.5.7.3.3";
-         
+
         public static bool IsSigned(string filePath)
         {
             try
             {
                 var certificate =  new X509Certificate2(X509Certificate.CreateFromSignedFile(filePath));
 
-                // check if file contains a code signing cert. 
+                // check if file contains a code signing cert.
                 // Note that this does not check validity of the signature
                 return certificate.Extensions
                     .Select(extension => extension as X509EnhancedKeyUsageExtension)
@@ -404,7 +406,7 @@ namespace AzureSignTool
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
                             var certificate = new X509Certificate2(path);
-                            logger.LogTrace($"Including additional certificate {certificate.Thumbprint}.");
+                            logger.LogTrace("Including additional certificate {thumbprint}.", certificate.Thumbprint);
                             collection.Add(certificate);
                             break;
                         default:
