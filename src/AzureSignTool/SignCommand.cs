@@ -92,6 +92,9 @@ namespace AzureSignTool
         [Option("-s | --skip-signed", "Skip files that are already signed.", CommandOptionType.NoValue)]
         public bool SkipSignedFiles { get; set; } = false;
 
+        [Option("-as | --append-signature", "Append the signature, has no effect with --skip-signed.", CommandOptionType.NoValue)]
+        public bool AppendSignature { get; set; } = false;
+
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
         public string[] Files { get; set; } = Array.Empty<string>();
@@ -169,7 +172,16 @@ namespace AzureSignTool
             {
                 return new ValidationResult("At least one file must be specified to sign.");
             }
-            foreach(var file in AllFiles)
+            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            {
+                return new ValidationResult("'--append-signature' requires Windows 11 or later.", new[] { nameof(AppendSignature) });
+            }
+            if (AppendSignature && AuthenticodeTimestamp.Present)
+            {
+                return new ValidationResult("Cannot use '--append-signature' and '--timestamp-authenticode' options together.", new[] { nameof(AppendSignature), nameof(AuthenticodeTimestamp) });
+            }
+
+            foreach (var file in AllFiles)
             {
                 if (!File.Exists(file))
                 {
@@ -254,6 +266,7 @@ namespace AzureSignTool
                 {
                     performPageHashing = false;
                 }
+                bool appendSignature = AppendSignature;
                 var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
                 var materializedResult = await configurationDiscoverer.Materialize(configuration);
                 AzureKeyVaultMaterializedConfiguration materialized;
@@ -304,7 +317,7 @@ namespace AzureSignTool
                                 return (state.succeeded + 1, state.failed);
                             }
 
-                            var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger);
+                            var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger, appendSignature);
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
