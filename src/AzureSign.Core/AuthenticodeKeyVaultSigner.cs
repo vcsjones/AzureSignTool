@@ -20,6 +20,7 @@ namespace AzureSign.Core
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
         private readonly SignCallback _signCallback;
+        private static readonly Version _win11Version = new Version(10, 0, 22000);
 
 
         /// <summary>
@@ -99,9 +100,7 @@ namespace AzureSign.Core
 
             if (appendSignature)
             {
-                // OperatingSystem.IsWindowsVersionAtLeast is not yet introduced in .Net Standard 2.0
-                bool isWindows11OrGreater = Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Minor >= 0 && Environment.OSVersion.Version.Build >= 22000;
-                if (!isWindows11OrGreater)
+                if (Environment.OSVersion.Version < _win11Version)
                 {
                     // must throw, if continued SignerSignEx3 might return no error, but fail with the task, we must prevent this silent corruption.
                     throw new PlatformNotSupportedException("Appending signatures requires Windows 11 or later.");
