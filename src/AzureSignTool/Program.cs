@@ -21,6 +21,7 @@ namespace AzureSignTool
             {
                 config.Description = "Signs a file.";
             });
+            application.VersionOptionFromAssemblyAttributes(typeof(Program).Assembly);
             application.Conventions.UseDefaultConventions();
             application.UnrecognizedArgumentHandling = UnrecognizedArgumentHandling.StopParsingAndCollect;
             return application.Execute(args);

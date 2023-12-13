@@ -30,6 +30,28 @@ namespace AzureSignTool.Tests
             Assert.NotEqual(0, ExitCode);
         }
 
+        [Fact]
+        public void ShowVersionOnOutputForHelp()
+        {
+            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
+                return Program.Main([]);
+            });
+
+            Assert.Matches(@"^\d\.\d\.\d", StdOut);
+            Assert.NotEqual(0, ExitCode);
+        }
+
+        [Fact]
+        public void ShowVersionOnOutputVersionArg()
+        {
+            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
+                return Program.Main(["--version"]);
+            });
+
+            Assert.Matches(@"^\d\.\d\.\d", StdOut);
+            Assert.Equal(0, ExitCode);
+        }
+
         private static (string StdOut, string StdErr, T Result) Capture<T>(Func<T> act)
         {
             lock (_sync)
