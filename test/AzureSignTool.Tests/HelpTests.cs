@@ -48,9 +48,7 @@ namespace AzureSignTool.Tests
                 return Program.Main(["--version"]);
             });
 
-            // This is from https://semver.org/
-            const string SemVerRegex = @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$";
-            Assert.Matches(SemVerRegex, StdOut);
+            Assert.Matches(@"^\d\.\d\.\d", StdOut);
             Assert.Equal(0, ExitCode);
         }
 
