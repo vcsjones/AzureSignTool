@@ -112,6 +112,9 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--skip-signed` [short: `-s`, required: no]: If a file is already signed it will be skipped, rather than replacing the existing
 	signature.
 
+* `--append-signature` [short: `-as`, required: no]: If a file is already signed it will append the signature, just sign otherwise. It has
+	no effect when used with `--skip-signed`
+
 ### Advanced
 
 * `--page-hashing` [short: `-ph`, required: no]: Causes the Authenticode signing process to generate hashes of pages for verifying when
@@ -148,7 +151,3 @@ a status code according to the complete signing operations.
 ## Requirements
 
 Windows 10 or Windows Server 2016 is required.
-
-## Current Limitations
-
-Dual signing is not supported. This appears to be a limitation of the API used.
