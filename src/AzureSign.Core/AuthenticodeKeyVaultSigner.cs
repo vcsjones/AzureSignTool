@@ -101,17 +101,25 @@ namespace AzureSign.Core
 
             if (appendSignature)
             {
-                if (Environment.OSVersion.Version < _win11Version)
+                if (!path.EndsWith(".dll".AsSpan(), StringComparison.InvariantCultureIgnoreCase) &&
+                    !path.EndsWith(".exe".AsSpan(), StringComparison.InvariantCultureIgnoreCase))
                 {
-                    // SignerSignEx3 silently succeeds with append on Windows 10 but does not actually append, so throw an error if we are not on Windows 11 or later.
-                    throw new PlatformNotSupportedException("Appending signatures requires Windows 11 or later.");
+                    logger?.LogWarning("SIG_APPEND is not supported for this file extention and will be ignored.");
                 }
-                if (_timeStampConfiguration.Type == TimeStampType.Authenticode)
+                else
                 {
-                    // E_INVALIDARG is expected from SignerSignEx3, no need to override this error, log warning for troubleshooting
-                    logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
+                    if (Environment.OSVersion.Version < _win11Version)
+                    {
+                        // SignerSignEx3 silently succeeds with append on Windows 10 but does not actually append, so throw an error if we are not on Windows 11 or later.
+                        throw new PlatformNotSupportedException("Appending signatures requires Windows 11 or later.");
+                    }
+                    if (_timeStampConfiguration.Type == TimeStampType.Authenticode)
+                    {
+                        // E_INVALIDARG is expected from SignerSignEx3, no need to override this error, log warning for troubleshooting
+                        logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
+                    }
+                    flags |= SignerSignEx3Flags.SIG_APPEND;
                 }
-                flags |= SignerSignEx3Flags.SIG_APPEND;
             }
 
             SignerSignTimeStampFlags timeStampFlags;
