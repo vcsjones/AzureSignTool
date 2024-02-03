@@ -56,7 +56,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--azure-key-vault-managed-identity` [short: `-kvm`, required: possibly]: Use the ambiant Managed Identity to authenticate to Azure. This
 	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
 	if AzureSignTool is being used on a VM/service/CLI that is configured for managed identities to
-	Azure.
+	Azure. Important to mention is that this option leverages the [DefaultAzureCredential](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet) class which is trying to get a token via multiple options including Visual Studio Credentials and Interactive Browser Authentication.
 
 * `--description` [short: `-d`, required: no]: A description of the signed content. This parameter serves the same purpose
 	as the `/d` option in the Windows SDK `signtool`. If this parameter is not supplied, the signature will not contain a
