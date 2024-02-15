@@ -17,7 +17,7 @@ internal static class X64ExePathFinder
             .FirstOrDefault(string.Empty);
         if (string.IsNullOrEmpty(path))
         {
-            logger.LogCritical("Executable {MakeAppx} not found under {ProgramFilesPath}, or incorrect processor architecture",
+            logger.LogCritical("Executable {File} not found under {ProgramFilesPath}, or incorrect processor architecture",
                 file,
                 programFilesPath);
         }
