@@ -12,5 +12,7 @@
         public const int E_ALL_FAILED = unchecked((int)0xA0000002);
 
         public const int TRUST_E_SUBJECT_FORM_UNKNOWN = unchecked((int)0x800B0003);
+
+        public const int E_VAULT_THROTTLING = unchecked((int)0x801901AD);
     }
 }
