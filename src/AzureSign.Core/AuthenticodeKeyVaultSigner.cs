@@ -20,7 +20,6 @@ namespace AzureSign.Core
         private readonly MemoryCertificateStore _certificateStore;
         private readonly X509Chain _chain;
         private readonly SignCallback _signCallback;
-        private static readonly Version _win11Version = new(10, 0, 22000);
 
 
         /// <summary>
@@ -101,16 +100,12 @@ namespace AzureSign.Core
 
             if (appendSignature)
             {
-                if (Environment.OSVersion.Version < _win11Version)
-                {
-                    // SignerSignEx3 silently succeeds with append on Windows 10 but does not actually append, so throw an error if we are not on Windows 11 or later.
-                    throw new PlatformNotSupportedException("Appending signatures requires Windows 11 or later.");
-                }
                 if (_timeStampConfiguration.Type == TimeStampType.Authenticode)
                 {
                     // E_INVALIDARG is expected from SignerSignEx3, no need to override this error, log warning for troubleshooting
                     logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
                 }
+                
                 flags |= SignerSignEx3Flags.SIG_APPEND;
             }
 
