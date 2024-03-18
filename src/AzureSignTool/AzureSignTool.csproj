@@ -22,6 +22,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="RSAKeyVaultProvider" Version="2.1.1" />
+    <PackageReference Include="Polly" Version="8.3.1" />
   </ItemGroup>
 
   <ItemGroup>

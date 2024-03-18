@@ -3,6 +3,8 @@ using McMaster.Extensions.CommandLineUtils;
 using McMaster.Extensions.CommandLineUtils.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Polly.Retry;
+using Polly;
 using RSAKeyVaultProvider;
 
 using System;
@@ -103,6 +105,18 @@ namespace AzureSignTool
         // We manually validate the file's existance with the --input-file-list. Don't validate here.
         [Argument(0, "file", "The path to the file.")]
         public string[] Files { get; set; } = [];
+
+        // retry strategy for Keyvault throttling errors
+        // https://learn.microsoft.com/en-us/azure/key-vault/general/overview-throttling
+        private readonly ResiliencePipeline _resiliencePipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().HandleResult(result => (int)result == E_VAULT_THROTTLING),
+                BackoffType = DelayBackoffType.Exponential,
+                MaxRetryAttempts = 4,
+                Delay = TimeSpan.FromSeconds(2)
+            })
+            .Build();
 
         private HashSet<string> _allFiles;
         public HashSet<string> AllFiles
@@ -321,9 +335,10 @@ namespace AzureSignTool
                             {
                                 logger.LogInformation("Skipping already signed file.");
                                 return (state.succeeded + 1, state.failed);
-                            }
+                            }                            
 
-                            var result = signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger, appendSignature);
+                            var result = _resiliencePipeline.Execute(() => signer.SignFile(filePath, Description, DescriptionUri, performPageHashing, logger, appendSignature));
+
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
