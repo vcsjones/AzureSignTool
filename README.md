@@ -112,7 +112,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--skip-signed` [short: `-s`, required: no]: If a file is already signed it will be skipped, rather than replacing the existing
 	signature.
 
-* `--apend-signature` [short: `-as`, required: no]: When specified the signing process adds a signature to an existing signature instead of
+* `--append-signature` [short: `-as`, required: no]: When specified the signing process adds a signature to an existing signature instead of
         replacing it. Requires Windows 11 or later.
 
 ### Advanced
