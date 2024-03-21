@@ -148,7 +148,7 @@ namespace AzureSignTool
             }
             if (Quiet && Verbose)
             {
-                return new ValidationResult("Cannot use '--quiet' and '--verbose' options together.", new[] { nameof(NoPageHashing), nameof(PageHashing) });
+                return new ValidationResult("Cannot use '--quiet' and '--verbose' options together.", new[] { nameof(Quiet), nameof(Verbose) });
             }
             if (!OneTrue(KeyVaultAccessToken.Present, KeyVaultClientId.Present, UseManagedIdentity))
             {

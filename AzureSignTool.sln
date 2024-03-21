@@ -1,7 +1,7 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.8
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureSignTool", "src\AzureSignTool\AzureSignTool.csproj", "{98E0A863-FE5E-452F-BF05-427F92915D24}"
 EndProject
@@ -19,6 +19,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{800D5449-F840-43E6-9559-28EB45AEA60B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureSignTool.Tests", "test\AzureSignTool.Tests\AzureSignTool.Tests.csproj", "{57EAFBF5-4AE6-4483-973D-2341AEB68CE0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReSignMsixBundle", "src\ReSignMsixBundle\ReSignMsixBundle.csproj", "{022EAA02-9DEB-4711-9047-1BB253F71D07}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +44,10 @@ Global
 		{57EAFBF5-4AE6-4483-973D-2341AEB68CE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57EAFBF5-4AE6-4483-973D-2341AEB68CE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57EAFBF5-4AE6-4483-973D-2341AEB68CE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{022EAA02-9DEB-4711-9047-1BB253F71D07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{022EAA02-9DEB-4711-9047-1BB253F71D07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{022EAA02-9DEB-4711-9047-1BB253F71D07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{022EAA02-9DEB-4711-9047-1BB253F71D07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -51,6 +57,7 @@ Global
 		{391ADA70-7F89-473D-BB25-1B37F0AF39B3} = {705BE9C7-3306-4B06-9668-2643131991C8}
 		{66894D4A-56C9-47E8-9368-C2CC9D7363F5} = {800D5449-F840-43E6-9559-28EB45AEA60B}
 		{57EAFBF5-4AE6-4483-973D-2341AEB68CE0} = {800D5449-F840-43E6-9559-28EB45AEA60B}
+		{022EAA02-9DEB-4711-9047-1BB253F71D07} = {705BE9C7-3306-4B06-9668-2643131991C8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85A8D627-D6E8-4F32-93B9-C22C35F7FEC1}
