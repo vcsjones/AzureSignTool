@@ -1,7 +1,7 @@
 Azure Sign Tool
 ===============
 
-The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v3.0.0/README.md).
+The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v5.0.0/README.md).
 
 Azure Sign Tool is similar to `signtool` in the Windows SDK, with the major difference being that it uses
 Azure Key Vault for performing the signing process. The usage is like `signtool`, except with a limited set
@@ -56,7 +56,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--azure-key-vault-managed-identity` [short: `-kvm`, required: possibly]: Use the ambiant Managed Identity to authenticate to Azure. This
 	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
 	if AzureSignTool is being used on a VM/service/CLI that is configured for managed identities to
-	Azure. Important to mention is that this option leverages the [DefaultAzureCredential](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet) class which is trying to get a token via multiple options including Visual Studio Credentials and Interactive Browser Authentication.
+	Azure. Important to mention is that this option leverages the [DefaultAzureCredential](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet) class which is trying to get a token via multiple options including Visual Studio Credentials and Interactive Browser Authentication.
 
 * `--description` [short: `-d`, required: no]: A description of the signed content. This parameter serves the same purpose
 	as the `/d` option in the Windows SDK `signtool`. If this parameter is not supplied, the signature will not contain a
@@ -112,6 +112,9 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 * `--skip-signed` [short: `-s`, required: no]: If a file is already signed it will be skipped, rather than replacing the existing
 	signature.
 
+* `--append-signature` [short: `-as`, required: no]: When specified the signing process adds a signature to an existing signature instead of
+        replacing it. Requires Windows 11 or later.
+
 ### Advanced
 
 * `--page-hashing` [short: `-ph`, required: no]: Causes the Authenticode signing process to generate hashes of pages for verifying when
@@ -147,8 +150,4 @@ a status code according to the complete signing operations.
 
 ## Requirements
 
-Windows 10 or Windows Server 2016 is required.
-
-## Current Limitations
-
-Dual signing is not supported. This appears to be a limitation of the API used.
+Windows 10 or Windows Server 2016 is required. Some features require later versions of Windows.
