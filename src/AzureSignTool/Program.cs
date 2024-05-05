@@ -1,7 +1,8 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using XenoAtom.CommandLine;
 
@@ -30,6 +31,9 @@ namespace AzureSignTool
 
     internal sealed class SignCommand : Command
     {
+        private HashSet<string>? _allFiles;
+        private List<string> Files { get; set; } = [];
+
         internal string? KeyVaultUrl { get; set; }
         internal string? KeyVaultClientId { get; set; }
         internal string? KeyVaultClientSecret { get; set; }
@@ -39,9 +43,9 @@ namespace AzureSignTool
         internal bool UseManagedIdentity { get; set; }
         internal string? SignDescription { get; set; }
         internal string? SignDescriptionUrl { get; set; }
-        internal string? Rfc3161Timestamp { get; set; }
-        internal string? TimestampDigestAlgorithm { get; set; }
-        internal string? FileDigestAlgorithm { get; set; }
+        internal string? Rfc3161TimestampUrl { get; set; }
+        internal string? TimestampDigestAlgorithm { get; set; } = "SHA256";
+        internal string? FileDigestAlgorithm { get; set; } = "SHA256";
         internal string? AuthenticodeTimestampUrl { get; set; }
         internal List<string> AdditionalCertificates { get; } = [];
         internal bool Verbose { get; set; }
@@ -56,6 +60,22 @@ namespace AzureSignTool
         internal bool AppendSignature { get; set; }
         internal string? AzureAuthority { get; set; }
 
+        internal HashSet<string> AllFiles
+        {
+            get
+            {
+                if (_allFiles == null)
+                {
+                    _allFiles = new HashSet<string>(Files);
+                    if (!string.IsNullOrWhiteSpace(InputFileList))
+                    {
+                        _allFiles.UnionWith(File.ReadLines(InputFileList).Where(s => !string.IsNullOrWhiteSpace(s)));
+                    }
+                }
+                return _allFiles;
+            }
+        }
+
         public SignCommand() : base("sign", "Sign a file.", null)
         {
             this.Add(new HelpOption());
@@ -68,7 +88,7 @@ namespace AzureSignTool
             this.Add("kvm|azure-key-vault-managed-identity", "Use the current Azure mananaged identity.", v => UseManagedIdentity = v is not null);
             this.Add("d|description=", "Provide a description of the signed content.", v => SignDescription = v);
             this.Add("du|description-url=", "Provide a URL with more information about the signed content.", v => SignDescriptionUrl = v);
-            this.Add("tr|timestamp-rfc3161=", "Specifies the RFC 3161 timestamp server's URL. If this option (or -t) is not specified, the signed file will not be timestamped.", v => Rfc3161Timestamp = v);
+            this.Add("tr|timestamp-rfc3161=", "Specifies the RFC 3161 timestamp server's URL. If this option (or -t) is not specified, the signed file will not be timestamped.", v => Rfc3161TimestampUrl = v);
             this.Add("td|timestamp-digest=", "Used with the -tr switch to request a digest algorithm used by the RFC 3161 timestamp server.", v => TimestampDigestAlgorithm = v);
             this.Add("fd|file-digest=", "The digest algorithm to hash the file with.", v => FileDigestAlgorithm = v);
             this.Add("t|timestamp-authenticode=", "Specify the legacy timestamp server's URL. This option is generally not recommended. Use the --timestamp-rfc3161 option instead.", v => AuthenticodeTimestampUrl = v);
@@ -84,13 +104,148 @@ namespace AzureSignTool
             this.Add("s|skip-signed", "Skip files that are already signed.", v => SkipSignedFiles = v is not null);
             this.Add("as|append-signature", "Append the signature, has no effect with --skip-signed.", v => AppendSignature = v is not null);
             this.Add("au|azure-authority=", "The Azure Authority for Azure Key Vault.", v => AzureAuthority = v);
+            this.Add("<>", "[files]*", Files);
             Action = Run;
         }
 
         private ValueTask<int> Run(CommandRunContext context, string[] arguments)
         {
-            Console.WriteLine(MaxDegreeOfParallelism);
-            return ValueTask.FromResult(0);
+            if (ValidateArguments(context))
+            {
+                return ValueTask.FromResult(0);
+            }
+            else
+            {
+                return ValueTask.FromResult(1);
+            }
         }
+
+        private bool ValidateArguments(CommandRunContext context)
+        {
+            bool valid = true;
+
+            if (KeyVaultUrl is null)
+            {
+                context.Error.WriteLine("--azure-key-vault-url is required.");
+                valid = false;
+            }
+
+            if (KeyVaultCertificate is null)
+            {
+                context.Error.WriteLine("--azure-key-vault-certificate is required.");
+                valid = false;
+            }
+
+            if (PageHashing && NoPageHashing)
+            {
+                context.Error.WriteLine("Cannot use '--page-hashing' and '--no-page-hashing' options together.");
+                valid = false;
+            }
+
+            if (Quiet && Verbose)
+            {
+                context.Error.WriteLine("Cannot use '--quiet' and '--verbose' options together.");
+                valid = false;
+            }
+            if (!OneTrue(KeyVaultAccessToken is not null, KeyVaultClientId is not null, UseManagedIdentity))
+            {
+                context.Error.WriteLine("One of '--azure-key-vault-accesstoken', '--azure-key-vault-client-id' or '--azure-key-vault-managed-identity' must be supplied.");
+                valid = false;
+            }
+
+            if (Rfc3161TimestampUrl is not null && AuthenticodeTimestampUrl is not null)
+            {
+                context.Error.WriteLine("Cannot use '--timestamp-rfc3161' and '--timestamp-authenticode' options together.");
+                valid = false;
+            }
+
+            if (KeyVaultClientId is not null && KeyVaultClientSecret is null)
+            {
+                context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.");
+                valid = false;
+            }
+
+            if (KeyVaultClientId is not null && KeyVaultTenantId is null)
+            {
+                context.Error.WriteLine("Must supply '--azure-key-vault-tenant-id' when using '--azure-key-vault-client-id'.");
+                valid = false;
+            }
+
+            if (UseManagedIdentity && (KeyVaultAccessToken is not null || KeyVaultClientId is not null))
+            {
+                context.Error.WriteLine("Cannot use '--azure-key-vault-managed-identity' and '--azure-key-vault-accesstoken' or '--azure-key-vault-client-id'.");
+                valid = false;
+            }
+
+            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            {
+                context.Error.WriteLine("'--append-signature' requires Windows 11 or later.", new[] { nameof(AppendSignature) });
+                valid = false;
+            }
+
+            if (AppendSignature && AuthenticodeTimestampUrl is not null)
+            {
+                context.Error.WriteLine("Cannot use '--append-signature' and '--timestamp-authenticode' options together.");
+                valid = false;
+            }
+
+            if (InputFileList is not null && !File.Exists(InputFileList))
+            {
+                context.Error.WriteLine($"File '{InputFileList}' does not exist.");
+                valid = false;
+            }
+
+            if (!ValidateHashAlgorithm(context, FileDigestAlgorithm, "--file-digest"))
+            {
+                valid = false;
+            }
+
+            if (!ValidateHashAlgorithm(context, TimestampDigestAlgorithm, "--timestamp-digest"))
+            {
+                valid = false;
+            }
+
+            if (AllFiles.Count == 0)
+            {
+                context.Error.WriteLine("At least one file must be specified to sign.");
+                valid = false;
+            }
+            else
+            {
+                foreach (string file in AllFiles)
+                {
+                    if (!File.Exists(file))
+                    {
+                        context.Error.WriteLine($"File '{file}' does not exist.");
+                        valid = false;
+                    }
+                }
+            }
+
+            return valid;
+        }
+
+        private static bool ValidateHashAlgorithm(CommandRunContext context, string? input, string optionName)
+        {
+            if (input is null)
+            {
+                context.Error.WriteLine($"'{optionName}' is required. Allowed values are {string.Join(", ", s_hashAlgorithm)}");
+                return false;
+            }
+
+            foreach(string a in s_hashAlgorithm)
+            {
+                if (input.Equals(a, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            context.Error.WriteLine($"'{input}' is not a valid hash algorithm for '{optionName}'. Allowed values are [{string.Join(", ", s_hashAlgorithm)}].");
+            return false;
+        }
+
+        private static bool OneTrue(params bool[] values) => values.Count(v => v) == 1;
+        private static readonly string[] s_hashAlgorithm = ["SHA1", "SHA256", "SHA384", "SHA512"];
     }
 }
