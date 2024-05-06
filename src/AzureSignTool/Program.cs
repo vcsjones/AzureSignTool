@@ -21,11 +21,11 @@ namespace AzureSignTool
     {
         public static Task<int> Main(string[] args)
         {
-            // if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            // {
-            //     Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
-            //     return E_PLATFORMNOTSUPPORTED;
-            // }
+            if (!OperatingSystem.IsWindows())
+            {
+                Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
+                return Task.FromResult(E_PLATFORMNOTSUPPORTED);
+            }
 
             var app = new CommandApp("azuresigntool")
             {
@@ -289,8 +289,26 @@ namespace AzureSignTool
             }
         }
 
-        // TODO: fix this.
-        private static bool IsSigned(string file) => false;
+        private static bool IsSigned(string filePath)
+        {
+            const string CodeSigningOid = "1.3.6.1.5.5.7.3.3";
+
+            try
+            {
+                var certificate =  new X509Certificate2(X509Certificate.CreateFromSignedFile(filePath));
+
+                // check if file contains a code signing cert.
+                // Note that this does not check validity of the signature
+                return certificate.Extensions
+                    .Select(extension => extension as X509EnhancedKeyUsageExtension)
+                    .Select(enhancedExtension => enhancedExtension?.EnhancedKeyUsages)
+                    .Any(oids => oids?[CodeSigningOid] != null);
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+        }
 
         private bool ValidateArguments(CommandRunContext context)
         {
