@@ -411,6 +411,12 @@ namespace AzureSignTool
                 valid = false;
             }
 
+            if (AzureAuthority is not null && AuthorityHostNames.GetUriForAzureAuthorityIdentifier(AzureAuthority) is null)
+            {
+                context.Error.WriteLine($"'{AzureAuthority}' is not a valid value for '--azure-authority'. Allowed values are [{string.Join(", ", AuthorityHostNames.Keys)}].");
+                valid = false;
+            }
+
             if (AllFiles.Count == 0)
             {
                 context.Error.WriteLine("At least one file must be specified to sign.");
