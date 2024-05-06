@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureSign.Core;
+using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using RSAKeyVaultProvider;
@@ -89,7 +91,14 @@ namespace AzureSignTool
             {
                 if (_allFiles is null)
                 {
-                    _allFiles = new HashSet<string>(Files);
+                    _allFiles = [];
+                    Matcher matcher = new();
+
+                    foreach (string file in Files)
+                    {
+                        Add(_allFiles, matcher, file);
+                    }
+
                     if (!string.IsNullOrWhiteSpace(InputFileList))
                     {
                         foreach(string line in File.ReadLines(InputFileList))
@@ -99,11 +108,36 @@ namespace AzureSignTool
                                 continue;
                             }
 
-                            _allFiles.Add(line);
+                            Add(_allFiles, matcher, line);
+                        }
+                    }
+
+                    PatternMatchingResult results = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(".")));
+
+                    if (results.HasMatches)
+                    {
+                        foreach (var result in results.Files)
+                        {
+                            _allFiles.Add(result.Path);
                         }
                     }
                 }
+
                 return _allFiles;
+
+                static void Add(HashSet<string> collection, Matcher matcher, string item)
+                {
+                    // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
+                    // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
+                    if (item.Contains('*'))
+                    {
+                        matcher.AddInclude(item);
+                    }
+                    else
+                    {
+                        collection.Add(item);
+                    }
+                }
             }
         }
 
