@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -29,12 +30,26 @@ namespace AzureSignTool
 
             var app = new CommandApp("azuresigntool")
             {
-                new VersionOption(prototype: "version"),
+                new VersionOption(version: GetVersion(), prototype: "version"),
                 new HelpOption(),
                 new SignCommand(),
+                new AboutCommand(),
             };
 
             return app.RunAsync(args).AsTask();
+
+            static string GetVersion()
+            {
+                Assembly assembly = typeof(Program).Assembly;
+                string? version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+                if (string.IsNullOrEmpty(version))
+                {
+                    version = assembly.GetName().Version?.ToString();
+                }
+
+                return version ?? "0.0.0";
+            }
         }
     }
 
@@ -125,6 +140,8 @@ namespace AzureSignTool
             }
             else
             {
+                context.Error.WriteLine();
+                context.Error.WriteLine("Use --help for additional information and usage.");
                 return ValueTask.FromResult(E_INVALIDARG);
             }
         }

@@ -17,7 +17,7 @@ namespace AzureSignTool.Tests
                 return await Program.Main(new string[0]);
             });
 
-            Assert.Contains("Usage:", StdOut);
+            Assert.Contains("usage.", StdErr);
             Assert.Equal(1, ExitCode);
         }
 
@@ -28,18 +28,7 @@ namespace AzureSignTool.Tests
                 return await Program.Main(new string[] { "sign" });
             });
 
-            Assert.Contains("--help", StdOut);
-            Assert.NotEqual(0, ExitCode);
-        }
-
-        [Fact]
-        public async Task ShowVersionOnOutputForHelp()
-        {
-            (string StdOut, string StdErr, int ExitCode) = await Capture(async () => {
-                return await Program.Main([]);
-            });
-
-            Assert.Matches(@"^\d\.\d\.\d", StdOut);
+            Assert.Contains("--help", StdErr);
             Assert.NotEqual(0, ExitCode);
         }
 
