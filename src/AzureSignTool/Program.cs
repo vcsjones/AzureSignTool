@@ -127,6 +127,8 @@ namespace AzureSignTool
 
                 static void Add(HashSet<string> collection, Matcher matcher, string item)
                 {
+                    // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
+                    // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
                     if (item.Contains('*'))
                     {
                         matcher.AddInclude(item);
