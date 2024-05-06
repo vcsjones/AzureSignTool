@@ -1,61 +1,54 @@
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AzureSignTool.Tests
 {
     public class HelpTests
     {
-        private static readonly object _sync = new object();
+        private static readonly SemaphoreSlim _sync = new(1, 1);
 
         [Fact]
-        public void BlankInputShouldShowHelpOutput()
+        public async Task BlankInputShouldShowHelpOutput()
         {
-            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
-                return Program.Main(new string[0]);
+            (string StdOut, string StdErr, int ExitCode) = await Capture(async () => {
+                return await Program.Main(new string[0]);
             });
 
-            Assert.Contains("Usage:", StdOut);
+            Assert.Contains("usage.", StdErr);
             Assert.Equal(1, ExitCode);
         }
 
         [Fact]
-        public void BlankInputForSignCommandShouldShowHelpOutput()
+        public async Task BlankInputForSignCommandShouldShowHelpOutput()
         {
-            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
-                return Program.Main(new string[] { "sign" });
+            (string StdOut, string StdErr, int ExitCode) = await Capture(async () => {
+                return await Program.Main(new string[] { "sign" });
             });
 
-            Assert.Contains("--help", StdOut);
+            Assert.Contains("--help", StdErr);
             Assert.NotEqual(0, ExitCode);
         }
 
         [Fact]
-        public void ShowVersionOnOutputForHelp()
+        public async Task ShowVersionOnOutputVersionArg()
         {
-            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
-                return Program.Main([]);
-            });
-
-            Assert.Matches(@"^\d\.\d\.\d", StdOut);
-            Assert.NotEqual(0, ExitCode);
-        }
-
-        [Fact]
-        public void ShowVersionOnOutputVersionArg()
-        {
-            (string StdOut, string StdErr, int ExitCode) = Capture(() => {
-                return Program.Main(["--version"]);
+            (string StdOut, string StdErr, int ExitCode) = await Capture(async () => {
+                return await Program.Main(["--version"]);
             });
 
             Assert.Matches(@"^\d\.\d\.\d", StdOut);
             Assert.Equal(0, ExitCode);
         }
 
-        private static (string StdOut, string StdErr, T Result) Capture<T>(Func<T> act)
+        private static async Task<(string StdOut, string StdErr, T Result)> Capture<T>(Func<ValueTask<T>> act)
         {
-            lock (_sync)
+            try
             {
+                await _sync.WaitAsync();
+
                 TextWriter oldStdOutWriter = Console.Out;
                 TextWriter oldStdErrWriter = Console.Error;
                 StringWriter stdOutWriter = new StringWriter();
@@ -65,7 +58,7 @@ namespace AzureSignTool.Tests
                 {
                     Console.SetOut(stdOutWriter);
                     Console.SetError(stdErrWriter);
-                    T result = act();
+                    T result = await act();
                     return (stdOutWriter.ToString(), stdErrWriter.ToString(), result);
                 }
                 finally
@@ -74,7 +67,10 @@ namespace AzureSignTool.Tests
                     Console.SetError(oldStdErrWriter);
                 }
             }
-
+            finally
+            {
+                _sync.Release();
+            }
         }
     }
 }

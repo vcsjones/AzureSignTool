@@ -17,6 +17,8 @@ namespace AzureSignTool
                 KeyValuePair.Create("public", AzureAuthorityHosts.AzurePublicCloud),
             ]);
 
+        public static IEnumerable<string> Keys => _map.Keys;
+
         public static Uri? GetUriForAzureAuthorityIdentifier(string identifier)
         {
             if (_map.TryGetValue(identifier, out Uri? host))
