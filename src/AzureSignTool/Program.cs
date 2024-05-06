@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -93,7 +92,15 @@ namespace AzureSignTool
                     _allFiles = new HashSet<string>(Files);
                     if (!string.IsNullOrWhiteSpace(InputFileList))
                     {
-                        _allFiles.UnionWith(File.ReadLines(InputFileList).Where(s => !string.IsNullOrWhiteSpace(s)));
+                        foreach(string line in File.ReadLines(InputFileList))
+                        {
+                            if (string.IsNullOrWhiteSpace(line))
+                            {
+                                continue;
+                            }
+
+                            _allFiles.Add(line);
+                        }
                     }
                 }
                 return _allFiles;
@@ -312,14 +319,21 @@ namespace AzureSignTool
 
             try
             {
-                var certificate =  new X509Certificate2(X509Certificate.CreateFromSignedFile(filePath));
+                using var certificate = X509Certificate.CreateFromSignedFile(filePath);
+                using var certificate2 = new X509Certificate2(certificate);
 
-                // check if file contains a code signing cert.
-                // Note that this does not check validity of the signature
-                return certificate.Extensions
-                    .Select(extension => extension as X509EnhancedKeyUsageExtension)
-                    .Select(enhancedExtension => enhancedExtension?.EnhancedKeyUsages)
-                    .Any(oids => oids?[CodeSigningOid] != null);
+                foreach (X509Extension ext in certificate2.Extensions)
+                {
+                    if (ext is X509EnhancedKeyUsageExtension eku)
+                    {
+                        if (eku.EnhancedKeyUsages[CodeSigningOid] is not null)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
             }
             catch (CryptographicException)
             {
@@ -540,7 +554,21 @@ namespace AzureSignTool
             throw new ArgumentException("Invalid hash algorithm", nameof(hashAlgorithm));
         }
 
-        private static bool OneTrue(params bool[] values) => values.Count(v => v) == 1;
+        private static bool OneTrue(params bool[] values)
+        {
+            int count = 0;
+
+            foreach (bool v in values)
+            {
+                if (v)
+                {
+                    count++;
+                }
+            }
+
+            return count == 1;
+        }
+
         private static readonly string[] s_hashAlgorithm = ["SHA1", "SHA256", "SHA384", "SHA512"];
     }
 }
