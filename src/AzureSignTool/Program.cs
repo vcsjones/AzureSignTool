@@ -238,7 +238,7 @@ namespace AzureSignTool
                 }
                 logger.LogTrace("Creating context");
 
-                using (var keyVault =  RSAFactory.Create(materialized.TokenCredential, materialized.KeyId, materialized.PublicCertificate))
+                using (var keyVault = RSAFactory.Create(materialized.TokenCredential, materialized.KeyId, materialized.PublicCertificate))
                 using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
                 {
                     Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
@@ -558,9 +558,9 @@ namespace AzureSignTool
         {
             int count = 0;
 
-            foreach (bool v in values)
+            for (int i = 0; i < values.Length && count < 2; i++)
             {
-                if (v)
+                if (values[i])
                 {
                     count++;
                 }
