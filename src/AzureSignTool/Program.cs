@@ -7,12 +7,12 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using AzureSign.Core;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
-using RSAKeyVaultProvider;
 using XenoAtom.CommandLine;
 
 using static AzureSignTool.HRESULT;
@@ -272,7 +272,8 @@ namespace AzureSignTool
                 }
                 logger.LogTrace("Creating context");
 
-                using (var keyVault = RSAFactory.Create(materialized.TokenCredential, materialized.KeyId, materialized.PublicCertificate))
+                var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential);
+                using (var keyVault = client.CreateRSA())
                 using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
                 {
                     Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
