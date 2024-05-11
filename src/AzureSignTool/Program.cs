@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using AzureSign.Core;
 using Microsoft.Extensions.FileSystemGlobbing;
@@ -248,6 +249,7 @@ namespace AzureSignTool
                 var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
                 var materializedResult = await configurationDiscoverer.Materialize(configuration);
                 AzureKeyVaultMaterializedConfiguration materialized;
+
                 switch (materializedResult)
                 {
                     case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Ok ok:
@@ -257,6 +259,14 @@ namespace AzureSignTool
                         logger.LogError("Failed to get configuration from Azure Key Vault.");
                         return E_INVALIDARG;
                 }
+
+                const string RsaOid = "1.2.840.113549.1.1.1";
+                if (materialized.PublicCertificate.GetKeyAlgorithm() is string alg and not RsaOid)
+                {
+                    logger.LogError("Certificate algorithm is not RSA.");
+                    return E_INVALIDARG;
+                }
+
                 int failed = 0, succeeded = 0;
                 var cancellationSource = new CancellationTokenSource();
                 Console.CancelKeyPress += (_, e) =>
@@ -272,8 +282,19 @@ namespace AzureSignTool
                 }
                 logger.LogTrace("Creating context");
 
-                var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential);
-                using (var keyVault = client.CreateRSA())
+                CryptographyClientOptions clientOptions = new() {
+                    Retry =
+                    {
+                        Delay = TimeSpan.FromSeconds(2),
+                        MaxDelay = TimeSpan.FromSeconds(16),
+                        MaxRetries = 5,
+                        Mode = RetryMode.Exponential
+                    }
+                };
+
+                var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential, clientOptions);
+
+                using (var keyVault = await client.CreateRSAAsync())
                 using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
                 {
                     Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
