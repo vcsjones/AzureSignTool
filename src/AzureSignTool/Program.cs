@@ -79,7 +79,7 @@ namespace AzureSignTool
         internal bool NoPageHashing { get; set; }
         internal bool ContinueOnError { get; set; }
         internal string? InputFileList { get; set; }
-        internal int? MaxDegreeOfParallelism { get; set; }
+        internal int MaxDegreeOfParallelism { get; set; } = 4;
         internal bool Colors { get; set; }
         internal bool SkipSignedFiles { get; set; }
         internal bool AppendSignature { get; set; }
@@ -266,9 +266,9 @@ namespace AzureSignTool
                     logger.LogInformation("Cancelling signing operations.");
                 };
                 var options = new ParallelOptions();
-                if (MaxDegreeOfParallelism.HasValue)
+                if (MaxDegreeOfParallelism != 0)
                 {
-                    options.MaxDegreeOfParallelism = MaxDegreeOfParallelism.Value;
+                    options.MaxDegreeOfParallelism = MaxDegreeOfParallelism;
                 }
                 logger.LogTrace("Creating context");
 
@@ -453,9 +453,9 @@ namespace AzureSignTool
             valid &= ValidateHashAlgorithm(context, FileDigestAlgorithm, "--file-digest");
             valid &= ValidateHashAlgorithm(context, TimestampDigestAlgorithm, "--timestamp-digest");
 
-            if (MaxDegreeOfParallelism is < -1 or 0)
+            if (MaxDegreeOfParallelism < -1)
             {
-                context.Error.WriteLine("'--max-degree-of-parallelism' must be a positive interger, or negative one.");
+                context.Error.WriteLine("'--max-degree-of-parallelism' must be a positive interger, zero, or -1.");
                 valid = false;
             }
 
