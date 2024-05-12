@@ -27,7 +27,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="RSAKeyVaultProvider" Version="2.1.1" />
   </ItemGroup>
 
   <ItemGroup>
