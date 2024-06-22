@@ -15,7 +15,7 @@ Security issues or vulnerabilties should be reported privately using GitHub's vu
 If using GitHub reports is not preferred or you do not have a GitHub account, email at kevin@vcsjones.dev is acceptable. If neccessary, email content can be encrypted using [age](https://filippo.io/age) using the following recipient key:
 
 ```plain
-age17x2jh56d7p7jpvqc8v4y4lz24w6g9r9zhkv6x4fvvg680ccew55qvktvvt
+age1jns778dpwkxta0e6tjv3345jy6dfr8a8mq9xznge7muyz6nu0v5sg7x6wn
 ```
 
 E-mail responses and handling will be slower than using the GitHub provided mechanism.
