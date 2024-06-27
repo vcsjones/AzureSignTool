@@ -135,7 +135,7 @@ In most circumances, using the defaults for page hashing is recommended, which c
 ## Supported Formats
 
 This tool uses the same mechanisms for signing as the Windows SDK `signtool`. It will support the same formats as `signtool` supports.
-However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Pacakges are
+However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Packages are
 present on the system.
 
 ## Exit Codes
