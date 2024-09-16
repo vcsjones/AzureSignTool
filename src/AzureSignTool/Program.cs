@@ -317,7 +317,7 @@ namespace AzureSignTool
                                 return (state.succeeded + 1, state.failed);
                             }
 
-                            var result = signer.SignFile(filePath, Description, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                            var result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
