@@ -4,8 +4,6 @@ using Azure.Security.KeyVault.Certificates;
 
 using Microsoft.Extensions.Logging;
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
