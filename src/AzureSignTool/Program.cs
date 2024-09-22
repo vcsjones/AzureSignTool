@@ -457,9 +457,9 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
-                context.Error.WriteLine("'--append-signature' requires Windows 11 or later.");
+                context.Error.WriteLine("'--append-signature' requires Windows Server 2022, Windows 11 or later.");
                 valid = false;
             }
 
