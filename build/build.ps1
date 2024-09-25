@@ -52,8 +52,8 @@ New-Item -Path $objDir -ItemType Directory
 Remove-Item -Path $outDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -Path $outDir -ItemType Directory
 
-dotnet pack -p:OutputFileNamesWithoutVersion=true -c Release -o $objDir src\AzureSign.Core\AzureSign.Core.csproj
-dotnet pack -p:OutputFileNamesWithoutVersion=true -c Release -o $objDir src\AzureSignTool\AzureSignTool.csproj
+dotnet pack -p:OutputFileNamesWithoutVersion=true -p:ContinuousIntegrationBuild=true -c Release -o $objDir src\AzureSign.Core\AzureSign.Core.csproj
+dotnet pack -p:OutputFileNamesWithoutVersion=true -p:ContinuousIntegrationBuild=true -c Release -o $objDir src\AzureSignTool\AzureSignTool.csproj
 
 Expand-Archive -Path $objDir\AzureSign.Core.nupkg -DestinationPath $objDir\AzureSign.Core.nupkg.dir
 Expand-Archive -Path $objDir\AzureSignTool.nupkg -DestinationPath $objDir\AzureSignTool.nupkg.dir
@@ -76,8 +76,8 @@ dotnet nuget sign --certificate-fingerprint 73f0844a95e35441a676cd6be1e79a3cd51d
 Copy-Item -Path "$objDir\AzureSign.Core.nupkg" -Destination "$outDir\AzureSign.Core.nupkg"
 Copy-Item -Path "$objDir\AzureSignTool.nupkg" -Destination "$outDir\AzureSignTool.nupkg"
 
-dotnet publish -c Release -r win-arm64 -o "$objDir\AzureSignTool-arm64" .\src\AzureSignTool\AzureSignTool.csproj
-dotnet publish -c Release -r win-x64 -o "$objDir\AzureSignTool-x64" .\src\AzureSignTool\AzureSignTool.csproj
+dotnet publish -c Release -r win-arm64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-arm64" .\src\AzureSignTool\AzureSignTool.csproj
+dotnet publish -c Release -r win-x64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-x64" .\src\AzureSignTool\AzureSignTool.csproj
 
 & "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-x64\AzureSignTool.exe"
 & "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-arm64\AzureSignTool.exe"
