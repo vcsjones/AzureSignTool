@@ -61,8 +61,6 @@ Expand-Archive -Path $objDir\AzureSignTool.nupkg -DestinationPath $objDir\AzureS
 Remove-Item -Path $objDir\AzureSign.Core.nupkg
 Remove-Item -Path $objDir\AzureSignTool.nupkg
 
-$commonSignArgs =
-
 & "$sdkBinPath\signtool.exe" sign /d "AzureSign.Core" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSign.Core.nupkg.dir\lib\net8.0\AzureSign.Core.dll"
 & "$sdkBinPath\signtool.exe" sign /d "AzureSign.Core" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSign.Core.nupkg.dir\lib\netstandard2.0\AzureSign.Core.dll"
 & "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool.nupkg.dir\tools\net8.0\any\AzureSignTool.dll"
