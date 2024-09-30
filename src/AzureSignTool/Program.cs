@@ -14,6 +14,8 @@ using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Polly.Retry;
+using Polly;
 using XenoAtom.CommandLine;
 
 using static AzureSignTool.HRESULT;
@@ -176,6 +178,18 @@ namespace AzureSignTool
             Action = Run;
         }
 
+        // retry strategy for Keyvault throttling errors
+        // https://learn.microsoft.com/en-us/azure/key-vault/general/overview-throttling
+        private readonly ResiliencePipeline _resiliencePipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().HandleResult(result => (int)result == E_VAULT_THROTTLING),
+                BackoffType = DelayBackoffType.Exponential,
+                MaxRetryAttempts = 4,
+                Delay = TimeSpan.FromSeconds(2)
+            })
+            .Build();
+
         private ValueTask<int> Run(CommandRunContext context, string[] arguments)
         {
             if (ValidateArguments(context))
@@ -320,7 +334,7 @@ namespace AzureSignTool
                                 return (state.succeeded + 1, state.failed);
                             }
 
-                            var result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                            var result = _resiliencePipeline.Execute(() => signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature));
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
