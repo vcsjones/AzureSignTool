@@ -1,4 +1,4 @@
-﻿using AzureSign.Core.Interop;
+using AzureSign.Core.Interop;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;

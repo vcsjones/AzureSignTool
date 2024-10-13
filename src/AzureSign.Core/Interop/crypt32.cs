@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace AzureSign.Core.Interop
@@ -10,7 +10,7 @@ namespace AzureSign.Core.Interop
         public static extern bool CertCloseStore
         (
             [In, MarshalAs(UnmanagedType.SysInt)] IntPtr hCertStore,
-            [In, MarshalAs(UnmanagedType.U4)] CertCloreStoreFlags dwFlags 
+            [In, MarshalAs(UnmanagedType.U4)] CertCloreStoreFlags dwFlags
         );
 
         [return: MarshalAs(UnmanagedType.SysInt)]

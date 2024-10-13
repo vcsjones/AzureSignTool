@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
@@ -63,6 +63,6 @@ namespace AzureSign.Core.Tests
                 yield return new object[] { HashAlgorithmName.SHA512, 0x0000800e };
             }
         }
-            
+
     }
 }
