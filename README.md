@@ -36,9 +36,11 @@ AzureSignTool can be installed in a couple of ways.
 You can install AzureSignTool from NuGet using
 
 ```powershell
-dotnet tool install --global AzureSignTool
+dotnet tool install --global --version 6.0.0 AzureSignTool
 AzureSignTool.exe
 ```
+
+It is recommended to specify an exact version such as 6.0.0, or a latest major-minor, like 6.0.* so that major versions, which often include a breaking change, are not automatically picked up.
 
 ### Single-file Download
 
