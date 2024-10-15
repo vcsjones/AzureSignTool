@@ -27,6 +27,36 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 [A walk-through is available](WALKTHROUGH.md) if you're interested on getting set up from scratch.
 
+## Installation
+
+AzureSignTool can be installed in a couple of ways.
+
+### NuGet Tool
+
+You can install AzureSignTool from NuGet using
+
+```powershell
+dotnet tool install --global AzureSignTool
+AzureSignTool.exe
+```
+
+### Single-file Download
+
+AzureSignTool provides self-contained executables on the GitHub release. For example, to download the v6.0.0 ARM64 installer:
+
+```powershell
+Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/download/v6.0.0/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
+.\AzureSignTool.exe
+```
+
+See [latest release](https://github.com/vcsjones/AzureSignTool/releases/latest) for available downloads.
+
+### Which to use?
+
+The NuGet tool offers smaller downloads that will install faster, however requires the .NET 8 SDK to be present on the system. The NuGet tool supports x64, x86, and ARM64.
+
+The single-file downloads do not require .NET to be installed on the system at all, only to be run on a supported version of Windows. They are entirely stand-alone binaries. This makes them useful in places that .NET is not installed at all, such as a CI pipeline that is not .NET-centric or desired. Single-file currently supports x64 and ARM64. If x86 support is needed, the NuGet tool is required.
+
 ## Parameters
 
 * `--azure-key-vault-url` [short: `-kvu`, required: yes]: A fully qualified URL of the key vault with
