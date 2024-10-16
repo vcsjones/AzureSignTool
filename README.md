@@ -58,7 +58,7 @@ See [latest release](https://github.com/vcsjones/AzureSignTool/releases/latest) 
 AzureSignTool can be install with the WinGet package manager.
 
 ```PowerShell
-winget install azuresigntool
+winget install vcsjones.azuresigntool
 ```
 
 The WinGet package manager installs the same binary this is available from the Single-file Download on the GitHub release. It does not require .NET to be installed.
