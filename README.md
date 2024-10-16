@@ -53,6 +53,16 @@ Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/download/v6
 
 See [latest release](https://github.com/vcsjones/AzureSignTool/releases/latest) for available downloads.
 
+### WinGet
+
+AzureSignTool can be install with the WinGet package manager.
+
+```PowerShell
+winget install azuresigntool
+```
+
+The WinGet package manager installs the same binary this is available from the Single-file Download on the GitHub release. It does not require .NET to be installed.
+
 ### Which to use?
 
 The NuGet tool offers smaller downloads that will install faster, however requires the .NET 8 SDK to be present on the system. The NuGet tool supports x64, x86, and ARM64.
