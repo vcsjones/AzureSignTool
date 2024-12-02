@@ -109,7 +109,7 @@ sign:
   stage: deploy
   image: mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2019 # If docker on windows is used.
   before_script:
-    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
+    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -OutFile AzureSignTool.exe
   script:
     - >
         .\AzureSignTool.exe sign 
@@ -150,7 +150,7 @@ sign:
       aud: 'https://gitlab.com'
   before_script:
     - az login --service-principal -u $AZURE_CLIENT_ID --tenant $AZURE_TENANT_ID --federated-token $GITLAB_OIDC_TOKEN
-    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
+    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -OutFile AzureSignTool.exe
   script:
     - >
       .\AzureSignTool.exe sign 
