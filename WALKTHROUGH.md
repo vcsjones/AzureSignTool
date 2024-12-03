@@ -153,7 +153,7 @@ sign:
     - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -OutFile AzureSignTool.exe
   script:
     - >
-      .\AzureSignTool.exe sign 
+      .\\AzureSignTool.exe sign 
       --azure-key-vault-url https://example.vault.azure.net/
       --azure-key-vault-managed-identity
       --azure-key-vault-certificate example-certificate
