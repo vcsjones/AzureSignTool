@@ -96,7 +96,7 @@ The single-file downloads do not require .NET to be installed on the system at a
 	Azure.
 
 * `--azure-key-vault-managed-identity` [short: `-kvm`, required: possibly]: Use the ambiant Managed Identity to authenticate to Azure. This
-	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. Important to mention that this option uses a combination of authentication mechanisms listed under [DefaultAzureCredential Class](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet#definition). Beside Managed Identity, this also allows you to use existing sessions in the Azure CLI or PowerShell. It also supports Visual Studio Credentials, Interactive Browser Authentication and more.
+	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This option uses a combination of authentication mechanisms listed under [DefaultAzureCredential Class](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet#definition). Beside Managed Identity, this also allows you to use existing sessions in the Azure CLI or PowerShell. It also supports Visual Studio Credentials, Interactive Browser Authentication and others.
 
 * `--description` [short: `-d`, required: no]: A description of the signed content. This parameter serves the same purpose
 	as the `/d` option in the Windows SDK `signtool`. If this parameter is not supplied, the signature will not contain a
