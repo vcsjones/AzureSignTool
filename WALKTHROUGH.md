@@ -1,13 +1,16 @@
-# Walkthrough: Using AzureSignTool to sign files with Azure DevOps
+# Walkthroughs
 
-*Note*: Sean Killeen has an expanded version of this on his blog, [How to: Use AzureSignTool to sign files with Azure DevOps using a certificate in Azure Key Vault
-][1].
-
-A lightweight guide on how to use this tool in context.
+The following basic preparations are required for all guides:
 
 * Obtain a certificate.
 * Within your Azure subscription, create an Azure KeyVault. Note the URL of the KeyVault; this will be your input to `-kvu` later.
 * Upload your certificate into the KeyVault, giving it a name.
+
+## Using AzureSignTool to sign files with Azure DevOps
+
+*Note*: Sean Killeen has an expanded version of this on his blog, [How to: Use AzureSignTool to sign files with Azure DevOps using a certificate in Azure Key Vault
+][1].
+
 * Do you have service connection with service principal authentication(or ready to create one)?
   * Yes - Much simpler [option A](#a--using-existing-service-connection-with-service-principal-authentication) is for you
   * No - Use [option B](#b--using-custom-application-principal)
@@ -18,11 +21,11 @@ A lightweight guide on how to use this tool in context.
 * Create an access policy that applies to your connection service principal.
 * For the access policy, set the below permissions:
 
-| Area | Permissions |
-| ---- | ----------- |
-| Key | Verify, Sign, Get, List |
-| Secret | Get, List |
-| Certificate | Get, List |
+  | Area | Permissions |
+  | ---- | ----------- |
+  | Key | Verify, Sign, Get, List |
+  | Secret | Get, List |
+  | Certificate | Get, List |
 
 * In your Azure DevOps build configuration, add a step to install the global tool:
 
@@ -59,11 +62,11 @@ A lightweight guide on how to use this tool in context.
 * Create an access policy that applies to your registered application, e.g. if the app you registered in AD was called `MyApp`, this policy should apply to the `MyApp` user.
 * For the access policy, set the below permissions:
 
-| Area | Permissions |
-| ---- | ----------- |
-| Key | Verify, Sign, Get, List |
-| Secret | Get, List |
-| Certificate | Get, List |
+  | Area | Permissions |
+  | ---- | ----------- |
+  | Key | Verify, Sign, Get, List |
+  | Secret | Get, List |
+  | Certificate | Get, List |
 
 * In your Azure DevOps build configuration, add a step to install the global tool:
 
@@ -85,7 +88,81 @@ A lightweight guide on how to use this tool in context.
     script: AzureSignTool sign -du "[YOUR_URL]" -kvu "https://[VAULT_ID].vault.azure.net" -kvi "[REDACTED_APPLICATION_ID]" -kvt "[REDACTED_DIRECTORY_ID]" -kvs "[REDACTED_APPLICATION_CLIENT_SECRET]" -kvc "[REDACTED_CERT_NAME]" -v [FILES_YOU_WANT_TO_SIGN]
 ```
 
-At this point, the build should be able to run and sign the files you have listed.
+## Using AzureSignTool to sign files with GitLab CI
+
+### A) Using service principal authentication
+
+* Go to KeyVault's the `Access Policies` section.
+* Create an access policy that applies to your service principal.
+* For the access policy, set the below permissions:
+
+  | Area | Permissions |
+  | ---- | ----------- |
+  | Key | Verify, Sign, Get, List |
+  | Secret | Get, List |
+  | Certificate | Get, List |
+
+* In your GitLab build configuration, add a job to install and execute the AzureSignTool:
+
+```yml
+sign:
+  stage: deploy
+  image: mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2019 # If docker on windows is used.
+  before_script:
+    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -OutFile AzureSignTool.exe
+  script:
+    - >
+        .\AzureSignTool.exe sign 
+        --azure-key-vault-url https://example.vault.azure.net/
+        --azure-key-vault-client-id $AZURE_CLIENT_ID
+        --azure-key-vault-client-secret $AZURE_CLIENT_SECRET
+        --azure-key-vault-tenant-id $AZURE_TENANT_ID
+        --azure-key-vault-certificate example-certificate
+        --verbose 
+        example.exe
+  artifacts:
+    paths:
+      - example.exe
+```
+
+### B) Using JWT Tokens authentication (OIDC)
+
+* Configure a [federated identity for GitLab](https://docs.gitlab.com/ee/ci/cloud_services/azure/#create-azure-ad-federated-identity-credentials) in your service principal.
+* Go to KeyVault's the `Access Policies` section.
+* Create an access policy that applies to your service principal.
+* For the access policy, set the below permissions:
+
+  | Area | Permissions |
+  | ---- | ----------- |
+  | Key | Verify, Sign, Get, List |
+  | Secret | Get, List |
+  | Certificate | Get, List |
+
+
+* In your GitLab build configuration, add a step to install and execute the AzureSignTool:
+
+```yml
+sign:
+  stage: deploy
+  image: mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2019 # If docker on windows is used.
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: 'https://gitlab.com'
+  before_script:
+    - az login --service-principal -u $AZURE_CLIENT_ID --tenant $AZURE_TENANT_ID --federated-token $GITLAB_OIDC_TOKEN
+    - Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -OutFile AzureSignTool.exe
+  script:
+    - >
+      .\\AzureSignTool.exe sign 
+      --azure-key-vault-url https://example.vault.azure.net/
+      --azure-key-vault-managed-identity
+      --azure-key-vault-certificate example-certificate
+      --verbose 
+      example.exe
+  artifacts:
+    paths:
+      - example.exe
+```
 
 Happy signing!
 
