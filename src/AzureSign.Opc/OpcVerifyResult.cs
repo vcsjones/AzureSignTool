@@ -10,9 +10,11 @@ public record OpcVerifyResult(
     Exception? Exception = null
 )
 {
+    public bool IsSuccess() => Status == OpcVerifyStatus.Success;
+
     public void ThrowIfFailed()
     {
-        if (Status is OpcVerifyStatus.Success)
+        if (IsSuccess())
         {
             return;
         }

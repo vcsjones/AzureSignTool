@@ -10,9 +10,11 @@ public record OpcSignResult(
     byte[]? PackageSignature = default
 )
 {
+    public bool IsSuccess() => Status == OpcSignStatus.Success;
+
     public void ThrowIfFailed()
     {
-        if (Status is OpcSignStatus.Success)
+        if (IsSuccess())
         {
             return;
         }
