@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Compression;
 using System.IO.Packaging;
 using System.Security.Cryptography;
@@ -33,73 +34,87 @@ public class OpcSigner(
     /// <returns>
     /// Returns the OPC package signature.
     /// </returns>
-    public async Task<byte[]> Sign(string packagePath, CancellationToken ct = default)
+    public async Task<OpcSignResult> Sign(string packagePath, CancellationToken ct = default)
     {
-        var certificate = await certificateProvider.GetCertificateAsync(ct);
-        using var package = Package.Open(packagePath);
-
-        // Short circuit if the certificate contains an RSA private key
-        if (certificate.GetRSAPrivateKey() is not null)
+        try
         {
-            return SignPackage(package, certificate, digestHashAlgorithm).SignatureValue;
-        }
+            var certificate = await certificateProvider.GetCertificateAsync(ct);
+            using var package = Package.Open(packagePath);
 
-        // Get the RSA instance from the provider and verify that the public key matches the certificate
-        if (cryptoServiceProvider is null)
-        {
-            throw new ArgumentException(
-                "Could not get an RSA instance. The provided certificate does not contain "
-                    + "a private key and a custom RSA instance provider was not supplied."
+            // Short circuit if the certificate contains an RSA private key
+            if (certificate.GetRSAPrivateKey() is not null)
+            {
+                var packageSignature = SignPackage(package, certificate, digestHashAlgorithm);
+                return OpcSignResult.Success(packageSignature.SignatureValue);
+            }
+
+            // Get the RSA instance from the provider and verify that the public key matches the certificate
+            if (cryptoServiceProvider is null)
+            {
+                return OpcSignResult.Fail(
+                    OpcSignStatus.CertificateError,
+                    "Could not get an RSA instance. The provided certificate does not contain "
+                        + "a private key and a custom RSA instance provider was not supplied."
+                );
+            }
+            var rsa = await cryptoServiceProvider.GetRsaAsync(ct);
+            if (!rsa.ExportRSAPublicKey().SequenceEqual(certificate.GetPublicKey()))
+            {
+                return OpcSignResult.Fail(
+                    OpcSignStatus.CertificateError,
+                    "The provided RSA public key does not match the provided certificate public key."
+                );
+            }
+
+            // Self-sign the package with a temporary certificate using the PackageDigitalSignatureManager.
+            // The PackageDigitalSignatureManager requires a certificate that contains a private key and
+            // does not support using a custom RSA instance to sign the package part hashes.
+            //
+            // The purpose of self-signing is to avoid implementing the package signing logic, and instead replace
+            // the applied certificate and signature with the ones from the provided certificate and RSA instance.
+            using var selfSignedCert = X509CertificateProvider.CreateSelfSignedRsa(
+                subjectName: "cn=TemporarySelfSignedHlkxCertificate",
+                hashAlgorithm: digestHashAlgorithm,
+                keySizeInBits: rsa.KeySize,
+                expireInDays: 7,
+                logger
             );
-        }
-        var rsa = await cryptoServiceProvider.GetRsaAsync(ct);
-        if (!rsa.ExportRSAPublicKey().SequenceEqual(certificate.GetPublicKey()))
-        {
-            throw new ArgumentException(
-                "The provided RSA public key does not match the provided certificate public key."
+            // Hash the package parts and sign with the temporary certificate, the signature will be replaced below
+            logger?.LogDebug("Hashing the package parts and signing with a temporary certificate.");
+            var packageSignatureInfo = SignPackage(package, selfSignedCert, digestHashAlgorithm);
+
+            // Get the package SignedInfo that holds the OPC package part/file list and hashes
+            var c14nSignedInfo = packageSignatureInfo.GetC14nSignedInfo();
+            package.Close();
+
+            // Hash the package SignedInfo and sign the hash using the provided RSA instance
+            logger?.LogDebug(
+                "Hashing and signing using provided certificate: {CertificateSubject}.",
+                certificate.Subject
             );
+            var signatureValue = rsa.SignData(
+                c14nSignedInfo,
+                digestHashAlgorithm,
+                RSASignaturePadding.Pkcs1
+            );
+            logger?.LogDebug(
+                "Signed the package SignedInfo element that holds the package part list and hashes."
+            );
+
+            // Patch the package using the provided certificate and the new signature
+            PatchPackageSignature(packagePath, certificate, signatureValue);
+
+            // Return the OPC package signature
+            return OpcSignResult.Success(packageSignatureInfo.SignatureValue);
         }
-
-        // Self-sign the package with a temporary certificate using the PackageDigitalSignatureManager.
-        // The PackageDigitalSignatureManager requires a certificate that contains a private key and
-        // does not support using a custom RSA instance to sign the package part hashes.
-        //
-        // The purpose of self-signing is to avoid implementing the package signing logic, and instead replace
-        // the applied certificate and signature with the ones from the provided certificate and RSA instance.
-        using var selfSignedCert = X509CertificateProvider.CreateSelfSignedRsa(
-            subjectName: "cn=TemporarySelfSignedHlkxCertificate",
-            hashAlgorithm: digestHashAlgorithm,
-            keySizeInBits: rsa.KeySize,
-            expireInDays: 7,
-            logger
-        );
-        // Hash the package parts and sign with the temporary certificate, the signature will be replaced below
-        logger?.LogDebug("Hashing the package parts and signing with a temporary certificate.");
-        var packageSignatureInfo = SignPackage(package, selfSignedCert, digestHashAlgorithm);
-
-        // Get the package SignedInfo that holds the OPC package part/file list and hashes
-        var c14nSignedInfo = packageSignatureInfo.GetC14nSignedInfo();
-        package.Close();
-
-        // Hash the package SignedInfo and sign the hash using the provided RSA instance
-        logger?.LogDebug(
-            "Hashing and signing using provided certificate: {CertificateSubject}.",
-            certificate.Subject
-        );
-        var signatureValue = rsa.SignData(
-            c14nSignedInfo,
-            digestHashAlgorithm,
-            RSASignaturePadding.Pkcs1
-        );
-        logger?.LogDebug(
-            "Signed the package SignedInfo element that holds the package part list and hashes."
-        );
-
-        // Patch the package using the provided certificate and the new signature
-        PatchPackageSignature(packagePath, certificate, signatureValue);
-
-        // Return the OPC package signature
-        return packageSignatureInfo.SignatureValue;
+        catch (IOException ex)
+        {
+            return OpcSignResult.Fail(OpcSignStatus.IoError, ex);
+        }
+        catch (Exception ex)
+        {
+            return OpcSignResult.Fail(ex);
+        }
     }
 
     /// <summary>

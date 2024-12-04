@@ -17,8 +17,8 @@ public record OpcVerifyResult(
         }
         if (Exception is null)
         {
-            var details = string.IsNullOrEmpty(Message) ? Status.ToString() : Message;
-            throw new OpcVerifyException(Status, $"OPC verify failed: {details}");
+            var message = string.IsNullOrEmpty(Message) ? $"OPC verify failed: {Status}." : Message;
+            throw new OpcVerifyException(Status, message);
         }
         throw Exception;
     }

@@ -80,10 +80,10 @@ public sealed class OpcSignerTest : IDisposable
             digestHashAlgorithm: hashAlgorithm
         );
 
-        _ = await opcSigner.Sign(testFile, ct);
-
-        var result = await opcSigner.Verify(testFile, ct: ct);
-        result.ThrowIfFailed();
+        var signResult = await opcSigner.Sign(testFile, ct);
+        signResult.ThrowIfFailed();
+        var verifyResult = await opcSigner.Verify(testFile, ct: ct);
+        verifyResult.ThrowIfFailed();
     }
 
     [Theory]
@@ -109,10 +109,10 @@ public sealed class OpcSignerTest : IDisposable
             hashAlgorithm
         );
 
-        _ = await opcSigner.Sign(testFile, ct);
-
-        var result = await opcSigner.Verify(testFile, ct: ct);
-        result.ThrowIfFailed();
+        var signResult = await opcSigner.Sign(testFile, ct);
+        signResult.ThrowIfFailed();
+        var verifyResult = await opcSigner.Verify(testFile, ct: ct);
+        verifyResult.ThrowIfFailed();
     }
 
     [Theory]
@@ -138,9 +138,10 @@ public sealed class OpcSignerTest : IDisposable
             hashAlgorithm
         );
 
-        _ = await opcSigner.Sign(testFile, ct);
-        var result = await opcSigner.Verify(testFile, ct: ct);
-        result.ThrowIfFailed();
+        var signResult = await opcSigner.Sign(testFile, ct);
+        signResult.ThrowIfFailed();
+        var verifyResult = await opcSigner.Verify(testFile, ct: ct);
+        verifyResult.ThrowIfFailed();
     }
 
     private static X509Certificate2 GetTestCertificate(
