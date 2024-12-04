@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>
     <RuntimeIdentifiers>win-x64;win-arm64;win-x86</RuntimeIdentifiers>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWPF>true</UseWPF>
     <PublishAot Condition="$(RuntimeIdentifier.EndsWith('64'))">true</PublishAot>
     <EventSourceSupport>false</EventSourceSupport>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
@@ -32,5 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AzureSign.Core\AzureSign.Core.csproj" />
+    <ProjectReference Include="..\AzureSign.Opc\AzureSign.Opc.csproj" />
   </ItemGroup>
 </Project>

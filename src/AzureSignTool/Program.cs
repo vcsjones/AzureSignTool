@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Security.KeyVault.Keys.Cryptography;
 using AzureSign.Core;
+using AzureSign.Opc;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -295,12 +297,16 @@ namespace AzureSignTool
                     }
                 };
 
-                var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential, clientOptions);
+                var opcFiles = AllFiles.Where(f => f.EndsWith(".hlkx")).ToHashSet();
+                var authenticodeFiles = AllFiles.Except(opcFiles).ToHashSet();
 
-                using (var keyVault = await client.CreateRSAAsync())
-                using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
+                var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential, clientOptions);
+                using var keyVault = await client.CreateRSAAsync();
+                var fileDigestAlgorithm = ParseHashAlgorithm(FileDigestAlgorithm);
+
+                using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, fileDigestAlgorithm, timeStampConfiguration, certificates))
                 {
-                    Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                    Parallel.ForEach(authenticodeFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
                     {
                         if (cancellationSource.IsCancellationRequested)
                         {
@@ -354,6 +360,22 @@ namespace AzureSignTool
                         Interlocked.Add(ref succeeded, result.succeeded);
                     });
                 }
+
+                using var certificateProvider = new X509CertificateProvider(materialized.PublicCertificate);
+                using var cryptoServiceProvider = new RsaCryptoServiceProvider(client);
+                var opcSigner = new OpcSigner(certificateProvider, cryptoServiceProvider, fileDigestAlgorithm, logger);
+
+                var opcSucceeded = await SignOpcFiles(
+                    logger,
+                    cancellationSource,
+                    cancelOnError: !ContinueOnError,
+                    skipSigned: SkipSignedFiles,
+                    opcSigner,
+                    opcFiles
+                );
+                succeeded += opcSucceeded;
+                failed += opcFiles.Count - opcSucceeded;
+
                 logger.LogInformation("Successful operations: {succeeded}", succeeded);
                 logger.LogInformation("Failed operations: {failed}", failed);
 
@@ -382,6 +404,81 @@ namespace AzureSignTool
             {
                 return false;
             }
+        }
+
+        private static async Task<int> SignOpcFiles(
+            ILogger logger,
+            CancellationTokenSource cts,
+            bool cancelOnError,
+            bool skipSigned,
+            OpcSigner signer,
+            HashSet<string> opcFilePaths
+        )
+        {
+            var tasks = opcFilePaths.Select(f => TrySignOpcFile(logger, cts, cancelOnError, skipSigned, signer, f));
+            var results = await Task.WhenAll(tasks);
+            return results.Count(r => r);
+        }
+
+        private static async Task<bool> TrySignOpcFile(
+            ILogger logger,
+            CancellationTokenSource cts,
+            bool cancelOnError,
+            bool skipSigned,
+            OpcSigner signer,
+            string opcFilePath
+        )
+        {
+            using (logger.BeginScope("File: {Id}", opcFilePath))
+            {
+                try
+                {
+                    return await SignOpcFile(logger, skipSigned, signer, opcFilePath, cts.Token);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        "OPC file signing failed with error {ErrorType}: {ErrorMessage}",
+                        ex.GetType().Name,
+                        ex.Message
+                    );
+                    if (cancelOnError)
+                    {
+                        cts.Cancel();
+                    }
+                    return false;
+                }
+            }
+        }
+
+        private static async Task<bool> SignOpcFile(
+            ILogger logger,
+            bool skipSignedFiles,
+            OpcSigner signer,
+            string opcFilePath,
+            CancellationToken ct
+        )
+        {
+            if (skipSignedFiles)
+            {
+                var verifySigned = await signer.Verify(opcFilePath, OpcVerifyOptions.VerifySignatureValidity, ct);
+                if (verifySigned.IsSuccess())
+                {
+                    logger.LogInformation("Skipping already signed OPC file.");
+                    return true;
+                }
+            }
+
+            logger.LogInformation("Signing OPC file.");
+            var signResult = await signer.Sign(opcFilePath, ct);
+            signResult.ThrowIfFailed();
+
+            logger.LogInformation("Verifying OPC file signatures.");
+            var verifyResult = await signer.Verify(opcFilePath, ct: ct);
+            verifyResult.ThrowIfFailed();
+
+            logger.LogInformation("OPC file signing completed successfully.");
+            return true;
         }
 
         private bool ValidateArguments(CommandRunContext context)
