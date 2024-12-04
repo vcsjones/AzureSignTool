@@ -105,9 +105,9 @@ public class OpcSigner(
     /// <summary>
     /// Verifies the validity of OPC package signatures.
     /// </summary>
-    public async Task<SignatureVerificationResult> VerifySignatures(
+    public async Task<OpcVerifyResult> Verify(
         string packagePath,
-        VerificationOptions verificationOptions = VerificationOptions.Default,
+        OpcVerifyOptions verificationOptions = OpcVerifyOptions.Default,
         CancellationToken ct = default
     )
     {
@@ -121,25 +121,27 @@ public class OpcSigner(
 
             if (dsm.Signatures.Count == 0)
             {
-                return SignatureVerificationResult.Fail(VerificationStatus.NotSigned);
+                return OpcVerifyResult.Fail(OpcVerifyStatus.NotSigned);
             }
-            if (verificationOptions.HasFlag(VerificationOptions.VerifySignatureValidity))
+            if (verificationOptions.HasFlag(OpcVerifyOptions.VerifySignatureValidity))
             {
                 var verifyResult = dsm.VerifySignatures(true);
                 if (verifyResult is not VerifyResult.Success)
                 {
-                    return SignatureVerificationResult.Fail(verifyResult);
+                    return OpcVerifyResult.Fail(verifyResult);
                 }
             }
-            if (verificationOptions.HasFlag(VerificationOptions.VerifyProviderCertificateMatch))
+            if (verificationOptions.HasFlag(OpcVerifyOptions.VerifyProviderCertificateMatch))
             {
                 var unmatchedSignature = dsm
-                    .Signatures.Where(s => s.Signer.GetSerialNumberString() != certificateSerialNumber)
+                    .Signatures.Where(s =>
+                        s.Signer.GetSerialNumberString() != certificateSerialNumber
+                    )
                     .FirstOrDefault();
                 if (unmatchedSignature is not null)
                 {
-                    return SignatureVerificationResult.Fail(
-                        VerificationStatus.UnmatchedPackagePart,
+                    return OpcVerifyResult.Fail(
+                        OpcVerifyStatus.UnmatchedPackagePart,
                         $"Unmatched certificate '{unmatchedSignature.Signer.Subject}' "
                             + $"found in signature part '{unmatchedSignature.SignaturePart.Uri}'. "
                             + $"Expected certificate '{certificate.Subject}'."
@@ -149,9 +151,9 @@ public class OpcSigner(
         }
         catch (Exception ex)
         {
-            return SignatureVerificationResult.Fail(ex);
+            return OpcVerifyResult.Fail(ex);
         }
-        return SignatureVerificationResult.Success();
+        return OpcVerifyResult.Success();
     }
 
     /// <summary>
@@ -206,7 +208,10 @@ public class OpcSigner(
             "SHA256" => "http://www.w3.org/2001/04/xmlenc#sha256",
             "SHA384" => "http://www.w3.org/2001/04/xmldsig-more#sha384",
             "SHA512" => "http://www.w3.org/2001/04/xmlenc#sha512",
-            _ => throw new InvalidOperationException($"Unsupported hash algorithm '{hashAlgorithm.Name}'."),
+            _
+                => throw new InvalidOperationException(
+                    $"Unsupported hash algorithm '{hashAlgorithm.Name}'."
+                ),
         };
         return new PackageDigitalSignatureManager(signedPackage)
         {

@@ -15,12 +15,12 @@ public sealed class OpcSignerTest : IDisposable
     }
 
     [Theory]
-    [InlineData(VerificationOptions.Default, VerificationStatus.NotSigned)]
-    [InlineData(VerificationOptions.VerifySignatureValidity, VerificationStatus.NotSigned)]
-    [InlineData(VerificationOptions.VerifyProviderCertificateMatch, VerificationStatus.NotSigned)]
+    [InlineData(OpcVerifyOptions.Default, OpcVerifyStatus.NotSigned)]
+    [InlineData(OpcVerifyOptions.VerifySignatureValidity, OpcVerifyStatus.NotSigned)]
+    [InlineData(OpcVerifyOptions.VerifyProviderCertificateMatch, OpcVerifyStatus.NotSigned)]
     public async Task Given_unsigned_hlkx_file_VerifySignatures_returns_expected_result(
-        VerificationOptions verificationOptions,
-        VerificationStatus expectedStatus
+        OpcVerifyOptions verificationOptions,
+        OpcVerifyStatus expectedStatus
     )
     {
         var ct = TestContext.Current.CancellationToken;
@@ -32,25 +32,21 @@ public sealed class OpcSignerTest : IDisposable
             cryptoServiceProvider: null,
             digestHashAlgorithm: HashAlgorithmName.SHA256
         );
-        var verificationResult = await opcSigner.VerifySignatures(
-            unsignedHlkx,
-            verificationOptions,
-            ct: ct
-        );
+        var verificationResult = await opcSigner.Verify(unsignedHlkx, verificationOptions, ct: ct);
 
         verificationResult.Status.Should().Be(expectedStatus);
     }
 
     [Theory]
-    [InlineData(VerificationOptions.Default, VerificationStatus.UnmatchedPackagePart)]
-    [InlineData(VerificationOptions.VerifySignatureValidity, VerificationStatus.Success)]
+    [InlineData(OpcVerifyOptions.Default, OpcVerifyStatus.UnmatchedPackagePart)]
+    [InlineData(OpcVerifyOptions.VerifySignatureValidity, OpcVerifyStatus.Success)]
     [InlineData(
-        VerificationOptions.VerifyProviderCertificateMatch,
-        VerificationStatus.UnmatchedPackagePart
+        OpcVerifyOptions.VerifyProviderCertificateMatch,
+        OpcVerifyStatus.UnmatchedPackagePart
     )]
     public async Task Given_signed_hlkx_file_VerifySignatures_returns_expected_result(
-        VerificationOptions verificationOptions,
-        VerificationStatus expectedStatus
+        OpcVerifyOptions verificationOptions,
+        OpcVerifyStatus expectedStatus
     )
     {
         var ct = TestContext.Current.CancellationToken;
@@ -62,11 +58,7 @@ public sealed class OpcSignerTest : IDisposable
             cryptoServiceProvider: null,
             digestHashAlgorithm: HashAlgorithmName.SHA256
         );
-        var verificationResult = await opcSigner.VerifySignatures(
-            unsignedHlkx,
-            verificationOptions,
-            ct: ct
-        );
+        var verificationResult = await opcSigner.Verify(unsignedHlkx, verificationOptions, ct: ct);
 
         verificationResult.Status.Should().Be(expectedStatus);
     }
@@ -90,7 +82,7 @@ public sealed class OpcSignerTest : IDisposable
 
         _ = await opcSigner.Sign(testFile, ct);
 
-        var result = await opcSigner.VerifySignatures(testFile, ct: ct);
+        var result = await opcSigner.Verify(testFile, ct: ct);
         result.ThrowIfFailed();
     }
 
@@ -119,7 +111,7 @@ public sealed class OpcSignerTest : IDisposable
 
         _ = await opcSigner.Sign(testFile, ct);
 
-        var result = await opcSigner.VerifySignatures(testFile, ct: ct);
+        var result = await opcSigner.Verify(testFile, ct: ct);
         result.ThrowIfFailed();
     }
 
@@ -147,7 +139,7 @@ public sealed class OpcSignerTest : IDisposable
         );
 
         _ = await opcSigner.Sign(testFile, ct);
-        var result = await opcSigner.VerifySignatures(testFile, ct: ct);
+        var result = await opcSigner.Verify(testFile, ct: ct);
         result.ThrowIfFailed();
     }
 

@@ -2,7 +2,7 @@ using System.IO.Packaging;
 
 namespace AzureSign.Opc;
 
-public enum VerificationStatus
+public enum OpcVerifyStatus
 {
     /// <summary>
     /// The verification was successful.

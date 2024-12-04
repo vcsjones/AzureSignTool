@@ -1,14 +1,12 @@
-using System.Security.Cryptography;
-
 namespace AzureSign.Opc;
 
 public interface IOpcSigner
 {
     Task<byte[]> Sign(string packagePath, CancellationToken ct = default);
 
-    Task<SignatureVerificationResult> VerifySignatures(
+    Task<OpcVerifyResult> Verify(
         string packagePath,
-        VerificationOptions options = VerificationOptions.Default,
+        OpcVerifyOptions options = OpcVerifyOptions.Default,
         CancellationToken ct = default
     );
 }
