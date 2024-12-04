@@ -39,5 +39,8 @@
     <None Update="TestAssets\BasicUnsignedHlkPackage.hlkx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="TestAssets\InvalidHlkxPackage.hlkx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

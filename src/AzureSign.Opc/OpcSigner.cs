@@ -36,6 +36,10 @@ public class OpcSigner(
     /// </returns>
     public async Task<OpcSignResult> Sign(string packagePath, CancellationToken ct = default)
     {
+        if (!File.Exists(packagePath))
+        {
+            return OpcSignResult.Fail(OpcSignStatus.IoError, "File not found.");
+        }
         try
         {
             var certificate = await certificateProvider.GetCertificateAsync(ct);
@@ -107,10 +111,6 @@ public class OpcSigner(
             // Return the OPC package signature
             return OpcSignResult.Success(packageSignatureInfo.SignatureValue);
         }
-        catch (IOException ex)
-        {
-            return OpcSignResult.Fail(OpcSignStatus.IoError, ex);
-        }
         catch (Exception ex)
         {
             return OpcSignResult.Fail(ex);
@@ -126,6 +126,10 @@ public class OpcSigner(
         CancellationToken ct = default
     )
     {
+        if (!File.Exists(packagePath))
+        {
+            return OpcVerifyResult.Fail(OpcVerifyStatus.IoError, "File not found.");
+        }
         try
         {
             var certificate = await certificateProvider.GetCertificateAsync(ct);

@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Packaging;
 using AzureSign.Opc.Exceptions;
 
@@ -31,6 +32,18 @@ public record OpcVerifyResult(
     public static OpcVerifyResult Fail(OpcVerifyStatus status, string message = "") =>
         new(status, message);
 
-    public static OpcVerifyResult Fail(Exception exception) =>
-        new(OpcVerifyStatus.Failed, exception.Message, exception);
+    public static OpcVerifyResult Fail(OpcVerifyStatus status, Exception exception) =>
+        new(status, exception.Message, exception);
+
+    public static OpcVerifyResult Fail(Exception exception)
+    {
+        var status = exception switch
+        {
+            IOException => OpcVerifyStatus.IoError,
+            InvalidDataException => OpcVerifyStatus.InvalidData,
+
+            _ => OpcVerifyStatus.Failed,
+        };
+        return new(status, exception.Message, exception);
+    }
 }

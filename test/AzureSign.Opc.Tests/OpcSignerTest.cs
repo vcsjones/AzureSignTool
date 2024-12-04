@@ -15,10 +15,41 @@ public sealed class OpcSignerTest : IDisposable
     }
 
     [Theory]
+    [InlineData("")]
+    [InlineData("Non_Existent_Hardware_Lab_Kit_File.hlkx")]
+    public async Task Given_an_invalid_hlkx_path_Verify_returns_Status_IoError(string filePath)
+    {
+        var testCertificate = GetTestCertificate(HashAlgorithmName.SHA256, 2048);
+
+        var opcSigner = new OpcSigner(
+            new X509CertificateProvider(testCertificate),
+            cryptoServiceProvider: null,
+            digestHashAlgorithm: HashAlgorithmName.SHA256
+        );
+        var verificationResult = await opcSigner.Verify(filePath, ct: CancellationToken.None);
+        verificationResult.Status.Should().Be(OpcVerifyStatus.IoError);
+    }
+
+    [Fact]
+    public async Task Given_invalid_hlkx_file_Verify_returns_Status_InvalidData()
+    {
+        var invalidHlkx = GetTestFile("InvalidHlkxPackage");
+        var testCertificate = GetTestCertificate(HashAlgorithmName.SHA256, 2048);
+
+        var opcSigner = new OpcSigner(
+            new X509CertificateProvider(testCertificate),
+            cryptoServiceProvider: null,
+            digestHashAlgorithm: HashAlgorithmName.SHA256
+        );
+        var verificationResult = await opcSigner.Verify(invalidHlkx, ct: CancellationToken.None);
+        verificationResult.Status.Should().Be(OpcVerifyStatus.InvalidData);
+    }
+
+    [Theory]
     [InlineData(OpcVerifyOptions.Default, OpcVerifyStatus.NotSigned)]
     [InlineData(OpcVerifyOptions.VerifySignatureValidity, OpcVerifyStatus.NotSigned)]
     [InlineData(OpcVerifyOptions.VerifyProviderCertificateMatch, OpcVerifyStatus.NotSigned)]
-    public async Task Given_unsigned_hlkx_file_VerifySignatures_returns_expected_result(
+    public async Task Given_unsigned_hlkx_file_Verify_returns_expected_result(
         OpcVerifyOptions verificationOptions,
         OpcVerifyStatus expectedStatus
     )
@@ -44,7 +75,7 @@ public sealed class OpcSignerTest : IDisposable
         OpcVerifyOptions.VerifyProviderCertificateMatch,
         OpcVerifyStatus.UnmatchedPackagePart
     )]
-    public async Task Given_signed_hlkx_file_VerifySignatures_returns_expected_result(
+    public async Task Given_signed_hlkx_file_Verify_returns_expected_result(
         OpcVerifyOptions verificationOptions,
         OpcVerifyStatus expectedStatus
     )
@@ -61,6 +92,37 @@ public sealed class OpcSignerTest : IDisposable
         var verificationResult = await opcSigner.Verify(unsignedHlkx, verificationOptions, ct: ct);
 
         verificationResult.Status.Should().Be(expectedStatus);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Non_Existent_Hardware_Lab_Kit_File.hlkx")]
+    public async Task Given_an_invalid_hlkx_path_Sign_returns_Status_IoError(string filePath)
+    {
+        var testCertificate = GetTestCertificate(HashAlgorithmName.SHA256, 2048);
+
+        var opcSigner = new OpcSigner(
+            new X509CertificateProvider(testCertificate),
+            cryptoServiceProvider: null,
+            digestHashAlgorithm: HashAlgorithmName.SHA256
+        );
+        var signResult = await opcSigner.Sign(filePath, ct: CancellationToken.None);
+        signResult.Status.Should().Be(OpcSignStatus.IoError);
+    }
+
+    [Fact]
+    public async Task Given_invalid_hlkx_file_Sign_returns_Status_InvalidData()
+    {
+        var invalidHlkx = GetTestFile("InvalidHlkxPackage");
+        var testCertificate = GetTestCertificate(HashAlgorithmName.SHA256, 2048);
+
+        var opcSigner = new OpcSigner(
+            new X509CertificateProvider(testCertificate),
+            cryptoServiceProvider: null,
+            digestHashAlgorithm: HashAlgorithmName.SHA256
+        );
+        var signResult = await opcSigner.Sign(invalidHlkx, ct: CancellationToken.None);
+        signResult.Status.Should().Be(OpcSignStatus.InvalidData);
     }
 
     [Theory]

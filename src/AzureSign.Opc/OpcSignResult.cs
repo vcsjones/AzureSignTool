@@ -1,3 +1,4 @@
+using System.IO;
 using AzureSign.Opc.Exceptions;
 
 namespace AzureSign.Opc;
@@ -32,6 +33,15 @@ public record OpcSignResult(
     public static OpcSignResult Fail(OpcSignStatus status, Exception exception) =>
         new(status, exception.Message, exception);
 
-    public static OpcSignResult Fail(Exception exception) =>
-        new(OpcSignStatus.Failed, exception.Message, exception);
+    public static OpcSignResult Fail(Exception exception)
+    {
+        var status = exception switch
+        {
+            IOException => OpcSignStatus.IoError,
+            InvalidDataException => OpcSignStatus.InvalidData,
+
+            _ => OpcSignStatus.Failed,
+        };
+        return new(status, exception.Message, exception);
+    }
 }

@@ -37,10 +37,20 @@ public enum OpcVerifyStatus
     /// <summary>
     /// The verification failed.
     /// </summary>
-    Failed = 0x1000,
+    Failed = 0x1001,
+
+    /// <summary>
+    /// The input file cannot be read from.
+    /// </summary>
+    IoError = 0x1002,
+
+    /// <summary>
+    /// The input package is invalid.
+    /// </summary>
+    InvalidData = 0x1003,
 
     /// <summary>
     /// A package part with a signature that does not match the provided certificate was found.
     /// </summary>
-    UnmatchedPackagePart = 0x1001,
+    UnmatchedPackagePart = 0x1004,
 }
