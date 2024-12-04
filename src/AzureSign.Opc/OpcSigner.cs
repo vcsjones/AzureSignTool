@@ -111,41 +111,47 @@ public class OpcSigner(
         CancellationToken ct = default
     )
     {
-        var certificate = await certificateProvider.GetCertificateAsync(ct);
-        var certificateSerialNumber = certificate.GetSerialNumberString();
-
-        using var signedPackage = Package.Open(packagePath);
-        var dsm = GetPackageDsm(signedPackage, digestHashAlgorithm);
-
-        if (dsm.Signatures.Count == 0)
+        try
         {
-            return new(VerificationStatus.NotSigned);
-        }
-        if (verificationOptions.HasFlag(VerificationOptions.VerifySignatureValidity))
-        {
-            var verifyResult = dsm.VerifySignatures(true);
-            if (verifyResult is not VerifyResult.Success)
+            var certificate = await certificateProvider.GetCertificateAsync(ct);
+            var certificateSerialNumber = certificate.GetSerialNumberString();
+
+            using var signedPackage = Package.Open(packagePath);
+            var dsm = GetPackageDsm(signedPackage, digestHashAlgorithm);
+
+            if (dsm.Signatures.Count == 0)
             {
-                return new((VerificationStatus)verifyResult);
+                return SignatureVerificationResult.Fail(VerificationStatus.NotSigned);
+            }
+            if (verificationOptions.HasFlag(VerificationOptions.VerifySignatureValidity))
+            {
+                var verifyResult = dsm.VerifySignatures(true);
+                if (verifyResult is not VerifyResult.Success)
+                {
+                    return SignatureVerificationResult.Fail(verifyResult);
+                }
+            }
+            if (verificationOptions.HasFlag(VerificationOptions.VerifyProviderCertificateMatch))
+            {
+                var unmatchedSignature = dsm
+                    .Signatures.Where(s => s.Signer.GetSerialNumberString() != certificateSerialNumber)
+                    .FirstOrDefault();
+                if (unmatchedSignature is not null)
+                {
+                    return SignatureVerificationResult.Fail(
+                        VerificationStatus.UnmatchedPackagePart,
+                        $"Unmatched certificate '{unmatchedSignature.Signer.Subject}' "
+                            + $"found in signature part '{unmatchedSignature.SignaturePart.Uri}'. "
+                            + $"Expected certificate '{certificate.Subject}'."
+                    );
+                }
             }
         }
-        if (verificationOptions.HasFlag(VerificationOptions.VerifyProviderCertificateMatch))
+        catch (Exception ex)
         {
-            var unmatchedSignature = dsm
-                .Signatures.Where(s => s.Signer.GetSerialNumberString() != certificateSerialNumber)
-                .FirstOrDefault();
-            if (unmatchedSignature is not null)
-            {
-                return new(
-                    VerificationStatus.UnmatchedPackagePart,
-                    $"Unmatched certificate '{unmatchedSignature.Signer.Subject}' "
-                        + $"found in signature part '{unmatchedSignature.SignaturePart.Uri}'. "
-                        + $"Expected certificate '{certificate.Subject}'."
-                );
-            }
+            return SignatureVerificationResult.Fail(ex);
         }
-
-        return new(VerificationStatus.Success);
+        return SignatureVerificationResult.Success();
     }
 
     /// <summary>
