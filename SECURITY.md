@@ -8,7 +8,7 @@ AzureSignTool and AzureSign.Core currently only support the latest version. Use 
 
 ### GitHub
 
-Security issues or vulnerabilties should be reported privately using GitHub's vulnerability reporting. This option is available on the "Security" section in this repository. Additional information is available on the [GitHub Documentation](https://docs.github.com/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability).
+Security issues or vulnerabilities should be reported privately using GitHub's vulnerability reporting. This option is available on the "Security" section in this repository. Additional information is available on the [GitHub Documentation](https://docs.github.com/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability).
 
 ### E-mail
 
