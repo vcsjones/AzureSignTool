@@ -12,7 +12,9 @@ namespace AzureSignTool
             StringComparer.OrdinalIgnoreCase,
             [
                 KeyValuePair.Create("gov", AzureAuthorityHosts.AzureGovernment),
+#pragma warning disable CS0618
                 KeyValuePair.Create("germany", AzureAuthorityHosts.AzureGermany),
+#pragma warning restore CS0618
                 KeyValuePair.Create("china", AzureAuthorityHosts.AzureChina),
                 KeyValuePair.Create("public", AzureAuthorityHosts.AzurePublicCloud),
             ]);
