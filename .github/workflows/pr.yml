@@ -1,5 +1,8 @@
 name: Pull Request
 
+permissions:
+  contents: read
+
 on:
   pull_request:
 
@@ -13,3 +16,14 @@ jobs:
       with:
         dotnet-version: '8.0'
     - run: dotnet test
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout
+    - uses: actions/dependency-review-action@v4
+      name: Dependency Review
+      with:
+        allow-licenses: MIT, Apache-2.0, BSD-2-Clause
+        fail-on-scopes: development, runtime
