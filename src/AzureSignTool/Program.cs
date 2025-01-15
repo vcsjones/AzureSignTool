@@ -30,6 +30,12 @@ namespace AzureSignTool
                 return Task.FromResult(E_PLATFORMNOTSUPPORTED);
             }
 
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                Console.Error.WriteLine("Azure Sign Tool requires Windows 10 or later.");
+                return Task.FromResult(E_PLATFORMNOTSUPPORTED);
+            }
+
             var app = new CommandApp("azuresigntool")
             {
                 new VersionOption(version: GetVersion(), prototype: "version"),
