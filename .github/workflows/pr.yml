@@ -26,4 +26,4 @@ jobs:
       name: Dependency Review
       with:
         allow-licenses: MIT, Apache-2.0, BSD-2-Clause
-        fail-on-scopes: development, runtime
+        fail-on-scopes: development, runtime, unknown
