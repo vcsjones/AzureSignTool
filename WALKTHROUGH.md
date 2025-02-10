@@ -23,9 +23,9 @@ The following basic preparations are required for all guides:
 
   | Area | Permissions |
   | ---- | ----------- |
-  | Key | Verify, Sign, Get, List |
-  | Secret | Get, List |
-  | Certificate | Get, List |
+  | Key | Sign |
+  | Secret | Get |
+  | Certificate | Get |
 
 * In your Azure DevOps build configuration, add a step to install the global tool:
 
@@ -64,9 +64,9 @@ The following basic preparations are required for all guides:
 
   | Area | Permissions |
   | ---- | ----------- |
-  | Key | Verify, Sign, Get, List |
-  | Secret | Get, List |
-  | Certificate | Get, List |
+  | Key | Sign |
+  | Secret | Get |
+  | Certificate | Get |
 
 * In your Azure DevOps build configuration, add a step to install the global tool:
 
@@ -98,9 +98,9 @@ The following basic preparations are required for all guides:
 
   | Area | Permissions |
   | ---- | ----------- |
-  | Key | Verify, Sign, Get, List |
-  | Secret | Get, List |
-  | Certificate | Get, List |
+  | Key | Sign |
+  | Secret | Get |
+  | Certificate | Get |
 
 * In your GitLab build configuration, add a job to install and execute the AzureSignTool:
 
@@ -134,9 +134,9 @@ sign:
 
   | Area | Permissions |
   | ---- | ----------- |
-  | Key | Verify, Sign, Get, List |
-  | Secret | Get, List |
-  | Certificate | Get, List |
+  | Key | Sign |
+  | Secret | Get |
+  | Certificate | Get |
 
 
 * In your GitLab build configuration, add a step to install and execute the AzureSignTool:
