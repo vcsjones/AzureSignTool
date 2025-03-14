@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace AzureSignTool
 {
@@ -10,6 +10,7 @@ namespace AzureSignTool
         public string AzureTenantId { get; init; }
         public Uri AzureKeyVaultUrl { get; init; }
         public string AzureKeyVaultCertificateName { get; init; }
+        public string AzureKeyVaultCertificateVersion { get; init; }
         public string AzureAccessToken { get; init; }
         public string AzureAuthority { get; init; }
     }

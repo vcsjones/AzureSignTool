@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,6 +27,12 @@ namespace AzureSignTool
             if (!OperatingSystem.IsWindows())
             {
                 Console.Error.WriteLine("Azure Sign Tool is only supported on Windows.");
+                return Task.FromResult(E_PLATFORMNOTSUPPORTED);
+            }
+
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                Console.Error.WriteLine("Azure Sign Tool requires Windows 10 or later.");
                 return Task.FromResult(E_PLATFORMNOTSUPPORTED);
             }
 
@@ -65,6 +71,7 @@ namespace AzureSignTool
         internal string? KeyVaultClientSecret { get; set; }
         internal string? KeyVaultTenantId { get; set; }
         internal string? KeyVaultCertificate { get; set; }
+        internal string? KeyVaultCertificateVersion { get; set; }
         internal string? KeyVaultAccessToken { get; set; }
         internal bool UseManagedIdentity { get; set; }
         internal string? SignDescription { get; set; }
@@ -150,8 +157,9 @@ namespace AzureSignTool
             this.Add("kvs|azure-key-vault-client-secret=", "The Client Secret to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
             this.Add("kvt|azure-key-vault-tenant-id=", "The Tenant Id to authenticate to the Azure Key Vault.", v => KeyVaultTenantId = v);
             this.Add("kvc|azure-key-vault-certificate=", "The name of the certificate in Azure Key Vault.", v => KeyVaultCertificate = v);
+            this.Add("kvcv|azure-key-vault-certificate-version=", "The version of the certificate in Azure Key Vault to use. The current version of the certificate is used by default.", v => KeyVaultCertificateVersion = v);
             this.Add("kva|azure-key-vault-accesstoken=", "The Access Token to authenticate to the Azure Key Vault.", v => KeyVaultAccessToken = v);
-            this.Add("kvm|azure-key-vault-managed-identity", "Use the current Azure mananaged identity.", v => UseManagedIdentity = v is not null);
+            this.Add("kvm|azure-key-vault-managed-identity", "Use the current Azure managed identity.", v => UseManagedIdentity = v is not null);
             this.Add("d|description=", "Provide a description of the signed content.", v => SignDescription = v);
             this.Add("du|description-url=", "Provide a URL with more information about the signed content.", v => SignDescriptionUrl = v);
             this.Add("tr|timestamp-rfc3161=", "Specifies the RFC 3161 timestamp server's URL. If this option (or -t) is not specified, the signed file will not be timestamped.", v => Rfc3161TimestampUrl = v);
@@ -159,7 +167,7 @@ namespace AzureSignTool
             this.Add("fd|file-digest=", "The digest algorithm to hash the file with.", v => FileDigestAlgorithm = v);
             this.Add("t|timestamp-authenticode=", "Specify the legacy timestamp server's URL. This option is generally not recommended. Use the --timestamp-rfc3161 option instead.", v => AuthenticodeTimestampUrl = v);
             this.Add("ac|additional-certificates=", "Specify one or more certificates to include in the public certificate chain.", AdditionalCertificates);
-            this.Add("v|verbose", "Specify one or more certificates to include in the public certificate chain.", v => Verbose = v is not null);
+            this.Add("v|verbose", "Include additional output in the log. This parameter does not accept a value and cannot be combine with the --quiet option.", v => Verbose = v is not null);
             this.Add("q|quiet", "Do not print any output to the console.", v => Quiet = v is not null);
             this.Add("ph|page-hashing", "Generate page hashes for executable files if supported.", v => PageHashing = v is not null);
             this.Add("nph|no-page-hashing", "Suppress page hashes for executable files if supported.", v => NoPageHashing = v is not null);
@@ -212,6 +220,7 @@ namespace AzureSignTool
                 {
                     AzureKeyVaultUrl = new Uri(KeyVaultUrl!),
                     AzureKeyVaultCertificateName = KeyVaultCertificate,
+                    AzureKeyVaultCertificateVersion = KeyVaultCertificateVersion,
                     AzureClientId = KeyVaultClientId,
                     AzureTenantId = KeyVaultTenantId,
                     AzureAccessToken = KeyVaultAccessToken,
@@ -320,11 +329,12 @@ namespace AzureSignTool
                             int result = E_INVALIDARG;
                             var thread = new System.Threading.Thread(o =>
                             {
-                                result = signer.SignFile(filePath, Description, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                                result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
                             });
                             thread.SetApartmentState(ApartmentState.STA);
                             thread.Start();
                             thread.Join();
+
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
@@ -378,25 +388,9 @@ namespace AzureSignTool
 
         private static bool IsSigned(string filePath)
         {
-            const string CodeSigningOid = "1.3.6.1.5.5.7.3.3";
-
             try
             {
-                using var certificate = X509Certificate.CreateFromSignedFile(filePath);
-                using var certificate2 = new X509Certificate2(certificate);
-
-                foreach (X509Extension ext in certificate2.Extensions)
-                {
-                    if (ext is X509EnhancedKeyUsageExtension eku)
-                    {
-                        if (eku.EnhancedKeyUsages[CodeSigningOid] is not null)
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
+                return X509Certificate2.GetCertContentType(filePath) == X509ContentType.Authenticode;
             }
             catch (CryptographicException)
             {
@@ -461,9 +455,9 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (AppendSignature && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
-                context.Error.WriteLine("'--append-signature' requires Windows 11 or later.");
+                context.Error.WriteLine("'--append-signature' requires Windows Server 2022, Windows 11 or later.");
                 valid = false;
             }
 

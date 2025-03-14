@@ -1,4 +1,4 @@
-﻿using Azure.Core;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Certificates;
 
@@ -47,14 +47,22 @@ namespace AzureSignTool
 
 
             X509Certificate2 certificate;
-            KeyVaultCertificateWithPolicy azureCertificate;
+            KeyVaultCertificate azureCertificate;
             try
             {
                 var certClient = new CertificateClient(configuration.AzureKeyVaultUrl, credential);
 
-                _logger.LogTrace($"Retrieving certificate {configuration.AzureKeyVaultCertificateName}.");
-                azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName).ConfigureAwait(false)).Value;
-                _logger.LogTrace($"Retrieved certificate {configuration.AzureKeyVaultCertificateName}.");
+                if (!string.IsNullOrWhiteSpace(configuration.AzureKeyVaultCertificateVersion))
+                {
+                    _logger.LogTrace($"Retrieving version [{configuration.AzureKeyVaultCertificateVersion}] of certificate {configuration.AzureKeyVaultCertificateName}.");
+                    azureCertificate = (await certClient.GetCertificateVersionAsync(configuration.AzureKeyVaultCertificateName, configuration.AzureKeyVaultCertificateVersion).ConfigureAwait(false)).Value;
+                }
+                else
+                {
+                    _logger.LogTrace($"Retrieving current version of certificate {configuration.AzureKeyVaultCertificateName}.");
+                    azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName).ConfigureAwait(false)).Value;
+                }
+                _logger.LogTrace($"Retrieved certificate with Id {azureCertificate.Id}.");
 
                 certificate = new X509Certificate2(azureCertificate.Cer);
             }

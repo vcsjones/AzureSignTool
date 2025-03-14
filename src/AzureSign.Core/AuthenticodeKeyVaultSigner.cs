@@ -1,4 +1,4 @@
-﻿using AzureSign.Core.Interop;
+using AzureSign.Core.Interop;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
@@ -105,7 +105,7 @@ namespace AzureSign.Core
                     // E_INVALIDARG is expected from SignerSignEx3, no need to override this error, log warning for troubleshooting
                     logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
                 }
-                
+
                 flags |= SignerSignEx3Flags.SIG_APPEND;
             }
 

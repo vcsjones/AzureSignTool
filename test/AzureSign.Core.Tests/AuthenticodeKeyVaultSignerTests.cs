@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -27,7 +27,7 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
                 result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
                 Assert.Equal(0, result);
@@ -45,7 +45,7 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
                 result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
                 Assert.Equal(0, result);
@@ -64,7 +64,7 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
                 result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
                 Assert.Equal(0, result);
@@ -83,7 +83,7 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
                 result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
                 Assert.Equal(0, result);
@@ -103,7 +103,7 @@ namespace AzureSign.Core.Tests
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
             Assert.Equal(0, result);
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
             {
                 result = signer.SignFile(fileToSign, null, null, null, appendSignature: true);
                 Assert.Equal(0, result);

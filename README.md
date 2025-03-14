@@ -1,7 +1,7 @@
 Azure Sign Tool
 ===============
 
-The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v5.0.0/README.md).
+The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v6.0.0/README.md).
 
 Azure Sign Tool is similar to `signtool` in the Windows SDK, with the major difference being that it uses
 Azure Key Vault for performing the signing process. The usage is like `signtool`, except with a limited set
@@ -26,6 +26,48 @@ Example usage:
 The `--help` or `sign --help` option provides more detail about each parameter.
 
 [A walk-through is available](WALKTHROUGH.md) if you're interested on getting set up from scratch.
+
+## Installation
+
+AzureSignTool can be installed in a couple of ways.
+
+### NuGet Tool
+
+You can install AzureSignTool from NuGet using
+
+```powershell
+dotnet tool install --global --version 6.0.0 AzureSignTool
+AzureSignTool.exe
+```
+
+It is recommended to specify an exact version such as 6.0.0, or a latest major-minor, like 6.0.* so that major versions, which often include a breaking change, are not automatically picked up.
+
+### Single-file Download
+
+AzureSignTool provides self-contained executables on the GitHub release. For example, to download the v6.0.0 ARM64 installer:
+
+```powershell
+Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/download/v6.0.0/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
+.\AzureSignTool.exe
+```
+
+See [latest release](https://github.com/vcsjones/AzureSignTool/releases/latest) for available downloads.
+
+### WinGet
+
+AzureSignTool can be install with the WinGet package manager.
+
+```PowerShell
+winget install vcsjones.azuresigntool
+```
+
+The WinGet package manager installs the same binary this is available from the Single-file Download on the GitHub release. It does not require .NET to be installed.
+
+### Which to use?
+
+The NuGet tool offers smaller downloads that will install faster, however requires the .NET 8 SDK to be present on the system. The NuGet tool supports x64, x86, and ARM64.
+
+The single-file downloads do not require .NET to be installed on the system at all, only to be run on a supported version of Windows. They are entirely stand-alone binaries. This makes them useful in places that .NET is not installed at all, such as a CI pipeline that is not .NET-centric or desired. Single-file currently supports x64 and ARM64. If x86 support is needed, the NuGet tool is required.
 
 ## Parameters
 
@@ -54,9 +96,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 	Azure.
 
 * `--azure-key-vault-managed-identity` [short: `-kvm`, required: possibly]: Use the ambiant Managed Identity to authenticate to Azure. This
-	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This is useful
-	if AzureSignTool is being used on a VM/service/CLI that is configured for managed identities to
-	Azure. Important to mention is that this option leverages the [DefaultAzureCredential](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet) class which is trying to get a token via multiple options including Visual Studio Credentials and Interactive Browser Authentication.
+	can be used instead of the `--azure-key-vault-accesstoken`, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` options. This option uses a combination of authentication mechanisms listed under [DefaultAzureCredential Class](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet#definition). Beside Managed Identity, this also allows you to use existing sessions in the Azure CLI or PowerShell. It also supports Visual Studio Credentials, Interactive Browser Authentication and others.
 
 * `--description` [short: `-d`, required: no]: A description of the signed content. This parameter serves the same purpose
 	as the `/d` option in the Windows SDK `signtool`. If this parameter is not supplied, the signature will not contain a
@@ -135,7 +175,7 @@ In most circumances, using the defaults for page hashing is recommended, which c
 ## Supported Formats
 
 This tool uses the same mechanisms for signing as the Windows SDK `signtool`. It will support the same formats as `signtool` supports.
-However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Pacakges are
+However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Packages are
 present on the system.
 
 ## Exit Codes
