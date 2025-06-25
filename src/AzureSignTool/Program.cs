@@ -64,8 +64,8 @@ namespace AzureSignTool
     internal sealed class SignCommand : Command
     {
         private HashSet<string>? _allFiles;
-        private List<string> Files { get; set; } = [];
 
+        internal List<string> Files { get; set; } = [];
         internal string? KeyVaultUrl { get; set; }
         internal string? KeyVaultClientId { get; set; }
         internal string? KeyVaultClientSecret { get; set; }
@@ -100,52 +100,76 @@ namespace AzureSignTool
                 if (_allFiles is null)
                 {
                     _allFiles = [];
-                    Matcher matcher = new();
-
-                    foreach (string file in Files)
-                    {
-                        Add(_allFiles, matcher, file);
-                    }
-
+                    List<string> files = [..Files];
                     if (!string.IsNullOrWhiteSpace(InputFileList))
                     {
-                        foreach(string line in File.ReadLines(InputFileList))
+                        foreach (string line in File.ReadLines(InputFileList))
                         {
                             if (string.IsNullOrWhiteSpace(line))
                             {
                                 continue;
                             }
 
-                            Add(_allFiles, matcher, line);
+                            files.Add(line);
                         }
                     }
 
-                    PatternMatchingResult results = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(".")));
+                    List<string> absGlobs = [];
+                    Matcher relMatcher = new();
 
-                    if (results.HasMatches)
+                    foreach (var file in files)
                     {
-                        foreach (var result in results.Files)
+                        // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
+                        // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
+                        if (file.Contains('*'))
+                        {
+                            if (Path.IsPathRooted(file))
+                            {
+                                absGlobs.Add(file);
+                            }
+                            else
+                            {
+                                relMatcher.AddInclude(file);
+                            }
+                        }
+                        else
+                        {
+                            _allFiles.Add(file);
+                        }
+                    }
+
+                    PatternMatchingResult relResults = relMatcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(".")));
+                    if (relResults.HasMatches)
+                    {
+                        foreach (var result in relResults.Files)
                         {
                             _allFiles.Add(result.Path);
+                        }
+                    }
+
+                    foreach (string absGlob in absGlobs)
+                    {
+                        string rootDir = GetPathRoot(absGlob);
+                        if (!Directory.Exists(rootDir))
+                        {
+                            continue;
+                        }
+
+                        var absMatcher = new Matcher(StringComparison.OrdinalIgnoreCase);
+                        absMatcher.AddInclude(absGlob.Replace(rootDir, ""));
+
+                        var absoluteResults = absMatcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(rootDir)));
+                        if (absoluteResults.HasMatches)
+                        {
+                            foreach (var match in absoluteResults.Files)
+                            {
+                                _allFiles.Add(Path.GetFullPath(Path.Combine(rootDir, match.Path)));
+                            }
                         }
                     }
                 }
 
                 return _allFiles;
-
-                static void Add(HashSet<string> collection, Matcher matcher, string item)
-                {
-                    // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
-                    // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
-                    if (item.Contains('*'))
-                    {
-                        matcher.AddInclude(item);
-                    }
-                    else
-                    {
-                        collection.Add(item);
-                    }
-                }
             }
         }
 
@@ -616,6 +640,23 @@ namespace AzureSignTool
             }
 
             return count == 1;
+        }
+
+        private static string GetPathRoot(string fullPathPattern)
+        {
+            int firstWildcardIndex = fullPathPattern.IndexOf('*');
+            if (firstWildcardIndex == -1)
+            {
+                return string.Empty;
+            }
+
+            int lastSeparatorIndex = fullPathPattern.LastIndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], firstWildcardIndex);
+            if (lastSeparatorIndex == -1)
+            {
+                return Path.GetPathRoot(fullPathPattern) ?? string.Empty;
+            }
+
+            return fullPathPattern[..lastSeparatorIndex];
         }
 
         private static readonly string[] s_hashAlgorithm = ["SHA1", "SHA256", "SHA384", "SHA512"];
