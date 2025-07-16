@@ -13,19 +13,19 @@ updates:
       azure-dependencies:
         patterns:
           - "Azure.*"
-        update-types: "major"
+        update-types: ["major", "minor", "patch"]
       dotnet-dependencies:
         patterns:
           - "Microsoft.Extensions.*"
           - "System.*"
-        update-types: "minor"
+        update-types: ["minor", "patch"]
       test-dependencies:
         patterns:
           - "xunit.*"
           - "Microsoft.NET.Test.SDK"
           - "MinVer"
-        update-types: "major"
+        update-types: ["major", "minor", "patch"]
       third-party-dependencies:
         patterns:
           - "XenoAtom.*"
-        update-types: "major"
+        update-types: ["major", "minor", "patch"]
