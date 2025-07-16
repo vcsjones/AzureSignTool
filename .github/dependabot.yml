@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      azure-dependencies:
+        patterns:
+          - "Azure.*"
+        update-types: "major"
+      dotnet-dependencies:
+        patterns:
+          - "Microsoft.Extensions.*"
+          - "System.*"
+        update-types: "minor"
+      test-dependencies:
+        patterns:
+          - "xunit.*"
+          - "Microsoft.NET.Test.SDK"
+          - "MinVer"
+        update-types: "major"
+      third-party-dependencies:
+        patterns:
+          - "XenoAtom.*"
+        update-types: "major"
