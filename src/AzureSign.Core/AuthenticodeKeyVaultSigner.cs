@@ -79,6 +79,13 @@ namespace AzureSign.Core
         /// <exception cref="PlatformNotSupportedException"><paramref name="appendSignature"/> was set to <see langword="true"/> however the current operating system does not support appending signatures.</exception>
         public unsafe int SignFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, bool? pageHashing, ILogger? logger = null, bool appendSignature = false)
         {
+            // Check for HLKX files and handle them with OPC signing
+            var sipKind = SipExtensionFactory.GetSipKind(path);
+            if (sipKind == SipKind.Hlkx)
+            {
+                return SignHlkxFile(path, description, descriptionUrl, logger);
+            }
+
             static char[] NullTerminate(ReadOnlySpan<char> str)
             {
                 char[] result = new char[str.Length + 1];
@@ -163,11 +170,11 @@ namespace AzureSign.Core
                 var signCallbackInfo = new SIGN_INFO(callbackPtr);
 
                 logger?.LogTrace("Getting SIP Data");
-                var sipKind = SipExtensionFactory.GetSipKind(path);
+                var sipKindForSipData = SipExtensionFactory.GetSipKind(path);
                 void* sipData = (void*)0;
                 IntPtr context = IntPtr.Zero;
 
-                switch (sipKind)
+                switch (sipKindForSipData)
                 {
                     case SipKind.Appx:
                         APPX_SIP_CLIENT_DATA clientData;
@@ -202,7 +209,7 @@ namespace AzureSign.Core
                 {
                     Debug.Assert(mssign32.SignerFreeSignerContext(context) == 0);
                 }
-                if (result == 0 && sipKind == SipKind.Appx)
+                if (result == 0 && sipKindForSipData == SipKind.Appx)
                 {
                     var state = ((APPX_SIP_CLIENT_DATA*)sipData)->pAppxSipState;
                     if (state != IntPtr.Zero)
@@ -276,5 +283,48 @@ namespace AzureSign.Core
             clientData.pSignerParams->pSignCallBack = signInfo;
 
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Signs an HLKX file using OPC digital signatures.
+        /// </summary>
+        private int SignHlkxFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, ILogger? logger)
+        {
+            try
+            {
+                var pathString = path.ToString();
+                logger?.LogInformation("Signing HLKX file: {Path}", pathString);
+
+                // Use the new OPC signer
+                var hlkxSigner = new AzureSign.Core.Opc.Signatures.HlkxSigner();
+                var result = hlkxSigner.SignFileAsync(pathString, _signingAlgorithm, _signingCertificate, _fileDigestAlgorithm, logger).GetAwaiter().GetResult();
+
+                if (result == 0)
+                {
+                    logger?.LogInformation("HLKX file signed successfully: {Path}", pathString);
+                }
+                else
+                {
+                    logger?.LogError("Failed to sign HLKX file: {Path}, HRESULT: {Result:X8}", pathString, result);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "Exception occurred while signing HLKX file: {Path}", path.ToString());
+                return unchecked((int)0x80004005); // E_FAIL
+            }
+        }
+#else
+        /// <summary>
+        /// Signs an HLKX file using OPC digital signatures.
+        /// </summary>
+        private int SignHlkxFile(ReadOnlySpan<char> path, ReadOnlySpan<char> description, ReadOnlySpan<char> descriptionUrl, ILogger? logger)
+        {
+            logger?.LogError("HLKX signing is only supported on .NET 8.0 or later");
+            return unchecked((int)0x80004005); // E_FAIL
+        }
+#endif
     }
 }

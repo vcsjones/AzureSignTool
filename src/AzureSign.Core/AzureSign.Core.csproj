@@ -22,4 +22,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <ProjectReference Include="..\AzureSign.Core.Opc\AzureSign.Core.Opc.csproj" />
+  </ItemGroup>
+
 </Project>

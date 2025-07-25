@@ -32,5 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AzureSign.Core\AzureSign.Core.csproj" />
+    <ProjectReference Include="..\AzureSign.Core.Opc\AzureSign.Core.Opc.csproj" />
   </ItemGroup>
 </Project>
