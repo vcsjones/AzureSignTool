@@ -6,7 +6,8 @@ namespace AzureSign.Core
     internal enum SipKind
     {
         None,
-        Appx
+        Appx,
+        Hlkx
     }
 
     internal class SipExtensionFactory
@@ -45,6 +46,10 @@ namespace AzureSign.Core
             if (extension.Equals(".emsixbundle", StringComparison.OrdinalIgnoreCase))
             {
                 return SipKind.Appx;
+            }
+            if (extension.Equals(".hlkx", StringComparison.OrdinalIgnoreCase))
+            {
+                return SipKind.Hlkx;
             }
             return SipKind.None;
         }
