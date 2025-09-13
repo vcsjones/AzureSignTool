@@ -5,16 +5,14 @@
 # All files
 [*]
 indent_style = space
+# Project files
+[*.csproj]
+indent_size = 2
+charset = utf-8
 # Code files
 [*.{cs,csx,vb,vbx}]
 indent_size = 4
 insert_final_newline = true
-charset = utf-8
-###############################
-# Project files (.csproj)     #
-###############################
-[*.csproj]
-indent_size = 2
 charset = utf-8
 ###############################
 # .NET Coding Conventions     #
