@@ -33,10 +33,4 @@
   <ItemGroup>
     <ProjectReference Include="..\AzureSign.Core\AzureSign.Core.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-      <_Parameter1>AzureSignTool.Tests</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
 </Project>
