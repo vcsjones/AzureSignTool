@@ -5,6 +5,10 @@
 # All files
 [*]
 indent_style = space
+# Project files
+[*.csproj]
+indent_size = 2
+charset = utf-8
 # Code files
 [*.{cs,csx,vb,vbx}]
 indent_size = 4
