@@ -1,3 +1,5 @@
+using static Windows.Win32.PInvoke;
+using Windows.Win32.Foundation;
 using AzureSign.Core.Interop;
 using Microsoft.Extensions.Logging;
 using System;
@@ -5,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Windows.Win32.Security.Cryptography;
 
 namespace AzureSign.Core
 {
@@ -87,15 +90,15 @@ namespace AzureSign.Core
                 return result;
             }
 
-            SignerSignEx3Flags flags = SignerSignEx3Flags.SIGN_CALLBACK_UNDOCUMENTED;
+            SIGNER_SIGN_FLAGS flags = SIGNER_SIGN_FLAGS.SPC_DIGEST_SIGN_FLAG;
 
             if (pageHashing == true)
             {
-                flags |= SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
+                flags |= SIGNER_SIGN_FLAGS.SPC_INC_PE_PAGE_HASHES_FLAG;
             }
             else if (pageHashing == false)
             {
-                flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
+                flags |= SIGNER_SIGN_FLAGS.SPC_EXC_PE_PAGE_HASHES_FLAG;
             }
 
             if (appendSignature)
@@ -106,66 +109,106 @@ namespace AzureSign.Core
                     logger?.LogWarning("If you set the dwTimestampFlags parameter to SIGNER_TIMESTAMP_AUTHENTICODE, you cannot set the dwFlags parameter to SIG_APPEND.");
                 }
 
-                flags |= SignerSignEx3Flags.SIG_APPEND;
+                flags |= SIGNER_SIGN_FLAGS.SIG_APPEND;
             }
 
-            SignerSignTimeStampFlags timeStampFlags;
-            ReadOnlySpan<byte> timestampAlgorithmOid;
+            SIGNER_TIMESTAMP_FLAGS timeStampFlags;
+            string? timestampAlgorithmOid = null;
             string? timestampUrl;
 
             switch (_timeStampConfiguration.Type)
             {
                 case TimeStampType.Authenticode:
-                    timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_AUTHENTICODE;
-                    timestampAlgorithmOid = default;
+                    timeStampFlags = SIGNER_TIMESTAMP_FLAGS.SIGNER_TIMESTAMP_AUTHENTICODE;
                     timestampUrl = _timeStampConfiguration.Url;
                     break;
                 case TimeStampType.RFC3161:
-                    timeStampFlags = SignerSignTimeStampFlags.SIGNER_TIMESTAMP_RFC3161;
+                    timeStampFlags = SIGNER_TIMESTAMP_FLAGS.SIGNER_TIMESTAMP_RFC3161;
                     timestampAlgorithmOid = AlgorithmTranslator.HashAlgorithmToOidAsciiTerminated(_timeStampConfiguration.DigestAlgorithm);
                     timestampUrl = _timeStampConfiguration.Url;
                     break;
                 default:
                     timeStampFlags = default;
-                    timestampAlgorithmOid = default;
                     timestampUrl = null;
                     break;
             }
 
-            fixed (byte* pTimestampAlgorithm = timestampAlgorithmOid)
             fixed (char* pTimestampUrl = timestampUrl)
             fixed (char* pPath = NullTerminate(path))
             fixed (char* pDescription = NullTerminate(description))
             fixed (char* pDescriptionUrl = NullTerminate(descriptionUrl))
             {
-                var fileInfo = new SIGNER_FILE_INFO(pPath, default);
+                var fileInfo = new SIGNER_FILE_INFO()
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_FILE_INFO>(),
+                    hFile = default,
+                    pwszFileName = pPath,
+                };
                 var subjectIndex = 0u;
-                var signerSubjectInfoUnion = new SIGNER_SUBJECT_INFO_UNION(&fileInfo);
-                var subjectInfo = new SIGNER_SUBJECT_INFO(&subjectIndex, SignerSubjectInfoUnionChoice.SIGNER_SUBJECT_FILE, signerSubjectInfoUnion);
-                var authCodeStructure = new SIGNER_ATTR_AUTHCODE(pDescription, pDescriptionUrl);
-                var storeInfo = new SIGNER_CERT_STORE_INFO(
-                    dwCertPolicy: SignerCertStoreInfoFlags.SIGNER_CERT_POLICY_CHAIN,
-                    hCertStore: _certificateStore.Handle,
-                    pSigningCert: _signingCertificate.Handle
-                );
-                var signerCert = new SIGNER_CERT(
-                    dwCertChoice: SignerCertChoice.SIGNER_CERT_STORE,
-                    union: new SIGNER_CERT_UNION(&storeInfo)
-                );
-                var signatureInfo = new SIGNER_SIGNATURE_INFO(
-                    algidHash: AlgorithmTranslator.HashAlgorithmToAlgId(_fileDigestAlgorithm),
-                    psAuthenticated: IntPtr.Zero,
-                    psUnauthenticated: IntPtr.Zero,
-                    dwAttrChoice: SignerSignatureInfoAttrChoice.SIGNER_AUTHCODE_ATTR,
-                    attrAuthUnion: new SIGNER_SIGNATURE_INFO_UNION(&authCodeStructure)
-                );
+                var subjectInfo = new SIGNER_SUBJECT_INFO
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_SUBJECT_INFO>(),
+                    pdwIndex = &subjectIndex,
+                    dwSubjectChoice = SIGNER_SUBJECT_CHOICE.SIGNER_SUBJECT_FILE,
+                    Anonymous = new() { pSignerFileInfo = &fileInfo }
+                };
+                var authCodeStructure = new SIGNER_ATTR_AUTHCODE
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_ATTR_AUTHCODE>(),
+                    fCommercial = false,
+                    fIndividual = false,
+                    pwszName = pDescription,
+                    pwszInfo = pDescriptionUrl,
+
+                };
+
+                var storeInfo = new SIGNER_CERT_STORE_INFO
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_CERT_STORE_INFO>(),
+                    dwCertPolicy = SIGNER_CERT_POLICY.SIGNER_CERT_POLICY_CHAIN,
+                    hCertStore = _certificateStore.Handle,
+                    pSigningCert = (CERT_CONTEXT*)_signingCertificate.Handle
+                };
+
+                var signerCert = new SIGNER_CERT()
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_CERT>(),
+                    dwCertChoice = SIGNER_CERT_CHOICE.SIGNER_CERT_STORE,
+                    Anonymous = new() { pCertStoreInfo = &storeInfo },
+                };
+
+                var signatureInfo = new SIGNER_SIGNATURE_INFO
+                {
+                    cbSize = (uint)Marshal.SizeOf<SIGNER_SIGNATURE_INFO>(),
+                    algidHash = (ALG_ID)AlgorithmTranslator.HashAlgorithmToAlgId(_fileDigestAlgorithm),
+                    psAuthenticated = null,
+                    psUnauthenticated = null,
+                    dwAttrChoice = SIGNER_SIGNATURE_ATTRIBUTE_CHOICE.SIGNER_AUTHCODE_ATTR,
+                    Anonymous = new() { pAttrAuthcode = &authCodeStructure }
+                };
+
                 var callbackPtr = Marshal.GetFunctionPointerForDelegate(_signCallback);
-                var signCallbackInfo = new SIGN_INFO(callbackPtr);
+                var signCallbackInfo = new SIGNER_DIGEST_SIGN_INFO
+                {
+                    cbSize = 24,
+                    Anonymous = new()
+                    {
+                        pfnAuthenticodeDigestSign =
+                            (delegate* unmanaged[Stdcall]<
+                            CERT_CONTEXT*,
+                            CRYPT_INTEGER_BLOB*,
+                            ALG_ID,
+                            byte*,
+                            uint,
+                            CRYPT_INTEGER_BLOB*, HRESULT>)
+                        callbackPtr
+                    },
+                };
 
                 logger?.LogTrace("Getting SIP Data");
                 var sipKind = SipExtensionFactory.GetSipKind(path);
                 void* sipData = (void*)0;
-                IntPtr context = IntPtr.Zero;
+                SIGNER_CONTEXT* pContext = null;
 
                 switch (sipKind)
                 {
@@ -174,35 +217,34 @@ namespace AzureSign.Core
                         SIGNER_SIGN_EX3_PARAMS parameters;
                         clientData.pSignerParams = &parameters;
                         sipData = &clientData;
-                        flags &= ~SignerSignEx3Flags.SPC_INC_PE_PAGE_HASHES_FLAG;
-                        flags |= SignerSignEx3Flags.SPC_EXC_PE_PAGE_HASHES_FLAG;
-                        FillAppxExtension(ref clientData, flags, timeStampFlags, &subjectInfo, &signerCert, &signatureInfo, &context, pTimestampUrl, pTimestampAlgorithm, &signCallbackInfo);
+                        flags &= ~SIGNER_SIGN_FLAGS.SPC_INC_PE_PAGE_HASHES_FLAG;
+                        flags |= SIGNER_SIGN_FLAGS.SPC_EXC_PE_PAGE_HASHES_FLAG;
+                        FillAppxExtension(ref clientData, flags, timeStampFlags, &subjectInfo, &signerCert, &signatureInfo, pContext, pTimestampUrl, timestampAlgorithmOid, &signCallbackInfo);
                         break;
                 }
 
                 logger?.LogTrace($"Calling SignerSignEx3 with flags: {flags}");
-                var result = mssign32.SignerSignEx3
+                var result = SignerSignEx3
                 (
                     flags,
-                    &subjectInfo,
-                    &signerCert,
-                    &signatureInfo,
-                    IntPtr.Zero,
+                    subjectInfo,
+                    signerCert,
+                    signatureInfo,
+                    null,
                     timeStampFlags,
-                    pTimestampAlgorithm,
-                    pTimestampUrl,
-                    IntPtr.Zero,
+                    timestampAlgorithmOid,
+                    timestampUrl,
+                    null,
                     sipData,
-                    &context,
-                    IntPtr.Zero,
-                    &signCallbackInfo,
-                    IntPtr.Zero
+                    out pContext,
+                    null,
+                    signCallbackInfo
                 );
-                if (result == 0 && context != IntPtr.Zero)
+                if (result == HRESULT.S_OK && pContext != null)
                 {
-                    Debug.Assert(mssign32.SignerFreeSignerContext(context) == 0);
+                    Debug.Assert(SignerFreeSignerContext(pContext) == HRESULT.S_OK);
                 }
-                if (result == 0 && sipKind == SipKind.Appx)
+                if (result == HRESULT.S_OK && sipKind == SipKind.Appx)
                 {
                     var state = ((APPX_SIP_CLIENT_DATA*)sipData)->pAppxSipState;
                     if (state != IntPtr.Zero)
@@ -229,10 +271,9 @@ namespace AzureSign.Core
             uint algId,
             byte[] pDigestToSign,
             uint dwDigestToSign,
-            ref CRYPTOAPI_BLOB blob
+            ref CRYPT_INTEGER_BLOB blob
         )
         {
-            const int E_INVALIDARG = unchecked((int)0x80070057);
             byte[] digest;
             switch (_signingAlgorithm)
             {
@@ -243,26 +284,26 @@ namespace AzureSign.Core
                     digest = ecdsa.SignHash(pDigestToSign);
                     break;
                 default:
-                    return E_INVALIDARG;
+                    return HRESULT.E_INVALIDARG;
             }
             var resultPtr = Marshal.AllocHGlobal(digest.Length);
             Marshal.Copy(digest, 0, resultPtr, digest.Length);
-            blob.pbData = resultPtr;
+            blob.pbData = (byte*)resultPtr;
             blob.cbData = (uint)digest.Length;
-            return 0;
+            return HRESULT.S_OK;
         }
 
         private static unsafe void FillAppxExtension(
             ref APPX_SIP_CLIENT_DATA clientData,
-            SignerSignEx3Flags flags,
-            SignerSignTimeStampFlags timestampFlags,
+            SIGNER_SIGN_FLAGS flags,
+            SIGNER_TIMESTAMP_FLAGS timestampFlags,
             SIGNER_SUBJECT_INFO* signerSubjectInfo,
             SIGNER_CERT* signerCert,
             SIGNER_SIGNATURE_INFO* signatureInfo,
-            IntPtr* signerContext,
+            SIGNER_CONTEXT* signerContext,
             char* timestampUrl,
-            byte* timestampOid,
-            SIGN_INFO* signInfo
+            string? timestampOid,
+            SIGNER_DIGEST_SIGN_INFO* signInfo
         )
         {
             clientData.pSignerParams->dwFlags = flags;
