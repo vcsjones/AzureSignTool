@@ -17,14 +17,14 @@ namespace AzureSign.Core
             };
         }
 
-        public static ReadOnlySpan<byte> HashAlgorithmToOidAsciiTerminated(HashAlgorithmName hashAlgorithmName)
+        public static string HashAlgorithmToOidAsciiTerminated(HashAlgorithmName hashAlgorithmName)
         {
             return hashAlgorithmName.Name switch
             {
-                nameof(HashAlgorithmName.SHA1) => "1.3.14.3.2.26\0"u8,
-                nameof(HashAlgorithmName.SHA256) => "2.16.840.1.101.3.4.2.1\0"u8,
-                nameof(HashAlgorithmName.SHA384) => "2.16.840.1.101.3.4.2.2\0"u8,
-                nameof(HashAlgorithmName.SHA512) => "2.16.840.1.101.3.4.2.3\0"u8,
+                nameof(HashAlgorithmName.SHA1) => "1.3.14.3.2.26\0",
+                nameof(HashAlgorithmName.SHA256) => "2.16.840.1.101.3.4.2.1\0",
+                nameof(HashAlgorithmName.SHA384) => "2.16.840.1.101.3.4.2.2\0",
+                nameof(HashAlgorithmName.SHA512) => "2.16.840.1.101.3.4.2.3\0",
                 _ => throw new NotSupportedException("The algorithm specified is not supported."),
             };
         }

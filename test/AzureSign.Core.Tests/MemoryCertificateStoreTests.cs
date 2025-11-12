@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 using AzureSign.Core;
@@ -11,7 +11,7 @@ namespace AzureSign.Core.Tests
         public void ShouldCreateAndDisposeAMemoryCertificateStore()
         {
             var store = MemoryCertificateStore.Create();
-            Assert.NotEqual(IntPtr.Zero, store.Handle);
+            Assert.NotEqual(default, store.Handle);
             Assert.Empty(store.Certificates);
             store.Close();
         }

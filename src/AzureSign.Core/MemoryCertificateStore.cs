@@ -1,7 +1,9 @@
-using AzureSign.Core.Interop;
+using static Windows.Win32.PInvoke;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
+
+using Windows.Win32.Security.Cryptography;
 
 namespace AzureSign.Core
 {
@@ -27,22 +29,22 @@ namespace AzureSign.Core
             }
         }
 
-        public static MemoryCertificateStore Create()
+        public unsafe static MemoryCertificateStore Create()
         {
             const string STORE_TYPE = "Memory";
-            var handle = crypt32.CertOpenStore(STORE_TYPE, CertEncodingType.NONE, IntPtr.Zero, CertOpenStoreFlags.NONE, IntPtr.Zero);
-            if (handle == IntPtr.Zero)
+            var handle = CertOpenStore(STORE_TYPE, 0, 0, (void*)IntPtr.Zero);
+            if (handle == (void*)IntPtr.Zero)
             {
                 throw new InvalidOperationException("Failed to create a memory certificate store.");
             }
-            return new MemoryCertificateStore(handle);
+            return new MemoryCertificateStore((IntPtr)(void*)handle);
         }
 
         public void Close() => Dispose(true);
         void IDisposable.Dispose() => Dispose(true);
         ~MemoryCertificateStore() => Dispose(false);
 
-        public IntPtr Handle => _store.StoreHandle;
+        public unsafe HCERTSTORE Handle => (HCERTSTORE)(void*)_store.StoreHandle;
         public void Add(X509Certificate2 certificate) => _store.Add(certificate);
         public void Add(X509Certificate2Collection collection) => _store.AddRange(collection);
         public X509Certificate2Collection Certificates => _store.Certificates;
@@ -59,11 +61,11 @@ namespace AzureSign.Core
             FreeHandle();
         }
 
-        private void FreeHandle()
+        private unsafe void FreeHandle()
         {
             if (_handle != IntPtr.Zero)
             {
-                var closed = crypt32.CertCloseStore(_handle, CertCloreStoreFlags.NONE);
+                var closed = CertCloseStore((HCERTSTORE)(void *)_handle, 0);
                 _handle = IntPtr.Zero;
                 Debug.Assert(closed);
             }
