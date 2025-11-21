@@ -4,7 +4,6 @@
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <Description>Authenticode signing library.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <RuntimeIdentifiers>win-x64;win-arm64;win-x86</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <Nullable>enable</Nullable>
