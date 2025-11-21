@@ -29,7 +29,7 @@ namespace AzureSign.Core.Tests
         {
             using (var store = MemoryCertificateStore.Create())
             {
-                using (var cert = new X509Certificate2("testcerts\\kevin_jones.cer"))
+                using (var cert = X509CertificateLoader.LoadCertificateFromFile("testcerts\\kevin_jones.cer"))
                 {
                     Assert.Empty(store.Certificates);
                     store.Add(cert);

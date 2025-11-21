@@ -22,7 +22,7 @@ namespace AzureSign.Core.Tests
         [MemberData(nameof(RsaCertificates))]
         public void ShouldSignExeWithRSASigningCertificates_Sha1FileDigest(string certificate)
         {
-            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA1, TimeStampConfiguration.None);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
@@ -40,7 +40,7 @@ namespace AzureSign.Core.Tests
         [MemberData(nameof(RsaCertificates))]
         public void ShouldSignExeWithRSASigningCertificates_Sha256FileDigest(string certificate)
         {
-            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
@@ -59,7 +59,7 @@ namespace AzureSign.Core.Tests
         [MemberData(nameof(ECDsaCertificates))]
         public void ShouldSignExeWithECDsaSigningCertificates_Sha256FileDigest(string certificate)
         {
-            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
             var fileToSign = GetFileToSign();
             var result = signer.SignFile(fileToSign, null, null, null);
@@ -77,7 +77,7 @@ namespace AzureSign.Core.Tests
         [MemberData(nameof(ECDsaCertificates))]
         public void ShouldSignExeWithECDsaSigningCertificates_Sha256FileDigest_WithTimestamps(string certificate)
         {
-            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
             var fileToSign = GetFileToSign();
@@ -97,7 +97,7 @@ namespace AzureSign.Core.Tests
         [MemberData(nameof(RsaCertificates))]
         public void ShouldSignExeWithRSASigningCertificates_Sha256FileDigest_WithTimestamps(string certificate)
         {
-            var signingCert = new X509Certificate2(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
             var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
             var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
             var fileToSign = GetFileToSign();
