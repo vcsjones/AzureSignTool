@@ -563,7 +563,7 @@ namespace AzureSignTool
                         case X509ContentType.Cert:
                         case X509ContentType.Authenticode:
                         case X509ContentType.SerializedCert:
-                            var certificate = new X509Certificate2(path);
+                            var certificate = X509CertificateLoader.LoadCertificateFromFile(path);
                             logger.LogTrace("Including additional certificate {thumbprint}.", certificate.Thumbprint);
                             collection.Add(certificate);
                             break;

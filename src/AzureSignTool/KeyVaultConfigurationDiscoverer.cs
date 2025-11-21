@@ -64,7 +64,7 @@ namespace AzureSignTool
                 }
                 _logger.LogTrace($"Retrieved certificate with Id {azureCertificate.Id}.");
 
-                certificate = new X509Certificate2(azureCertificate.Cer);
+                certificate = X509CertificateLoader.LoadCertificate(azureCertificate.Cer);
             }
             catch (Exception e)
             {
