@@ -1,7 +1,7 @@
 Azure Sign Tool
 ===============
 
-The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v6.0.0/README.md).
+The below README is based on functionality in `main` which may not be the same as the latest released version of AzureSignTool. For README information about released versions, please see the README for the version's associated tag. The README for the current release can [be found here](https://github.com/vcsjones/AzureSignTool/blob/v7.0.0/README.md).
 
 Azure Sign Tool is similar to `signtool` in the Windows SDK, with the major difference being that it uses
 Azure Key Vault for performing the signing process. The usage is like `signtool`, except with a limited set
@@ -36,18 +36,18 @@ AzureSignTool can be installed in a couple of ways.
 You can install AzureSignTool from NuGet using
 
 ```powershell
-dotnet tool install --global --version 6.0.0 AzureSignTool
+dotnet tool install --global --version 7.0.0 AzureSignTool
 AzureSignTool.exe
 ```
 
-It is recommended to specify an exact version such as 6.0.0, or a latest major-minor, like 6.0.* so that major versions, which often include a breaking change, are not automatically picked up.
+It is recommended to specify an exact version such as 7.0.0, or a latest major-minor, like 7.0.* so that major versions, which often include a breaking change, are not automatically picked up.
 
 ### Single-file Download
 
-AzureSignTool provides self-contained executables on the GitHub release. For example, to download the v6.0.0 ARM64 installer:
+AzureSignTool provides self-contained executables on the GitHub release. For example, to download the v7.0.0 ARM64 installer:
 
 ```powershell
-Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/download/v6.0.0/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
+Invoke-WebRequest https://github.com/vcsjones/AzureSignTool/releases/download/v7.0.0/AzureSignTool-arm64.exe -OutFile AzureSignTool.exe
 .\AzureSignTool.exe
 ```
 
@@ -140,7 +140,7 @@ The single-file downloads do not require .NET to be installed on the system at a
 
 * `--quiet` [short: `-q`, required: no]: Do not print output to the log. This parameter does not accept a value and cannot be
 	combine with the `--verbose` option. The exit code of the process can be used to determine success or failure of the sign operation.
-	
+
 * `--continue-on-error` [short: `-coe`, required: no]: If multiple files to sign are specified, this flag will cause the signing process to
 	move on to the next file when signing fails. This flag modifies the exit code of the program. See the Exit Codes section for more
 	information.
