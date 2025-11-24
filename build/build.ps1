@@ -63,8 +63,10 @@ Remove-Item -Path $objDir\AzureSignTool.nupkg
 
 & "$sdkBinPath\signtool.exe" sign /d "AzureSign.Core" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSign.Core.nupkg.dir\lib\net8.0\AzureSign.Core.dll"
 & "$sdkBinPath\signtool.exe" sign /d "AzureSign.Core" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSign.Core.nupkg.dir\lib\netstandard2.0\AzureSign.Core.dll"
+& "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool.nupkg.dir\tools\net8.0\any\AzureSignTool.dll"
 & "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool.nupkg.dir\tools\net10.0\any\AzureSignTool.dll"
 
+Copy-Item -Path "$objDir\AzureSign.Core.nupkg.dir\lib\net8.0\AzureSign.Core.dll" -Destination "$objDir\AzureSignTool.nupkg.dir\tools\net8.0\any\AzureSign.Core.dll"
 Copy-Item -Path "$objDir\AzureSign.Core.nupkg.dir\lib\net8.0\AzureSign.Core.dll" -Destination "$objDir\AzureSignTool.nupkg.dir\tools\net10.0\any\AzureSign.Core.dll"
 
 Compress-Archive -Path "$objDir\AzureSign.Core.nupkg.dir\*" -DestinationPath "$objDir\AzureSign.Core.nupkg"
@@ -76,11 +78,11 @@ dotnet nuget sign --certificate-fingerprint 68821304869e065c24e0684eb43bf974e124
 Copy-Item -Path "$objDir\AzureSign.Core.nupkg" -Destination "$outDir\AzureSign.Core.nupkg"
 Copy-Item -Path "$objDir\AzureSignTool.nupkg" -Destination "$outDir\AzureSignTool.nupkg"
 
-dotnet publish -c Release -r win-arm64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-arm64" .\src\AzureSignTool\AzureSignTool.csproj
-dotnet publish -c Release -r win-x64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-x64" .\src\AzureSignTool\AzureSignTool.csproj
+dotnet publish -f net10.0 -c Release -r win-arm64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-arm64" .\src\AzureSignTool\AzureSignTool.csproj
+dotnet publish -f net10.0 -c Release -r win-x64 -p:ContinuousIntegrationBuild=true -o "$objDir\AzureSignTool-x64" .\src\AzureSignTool\AzureSignTool.csproj
 
-& "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-x64\AzureSignTool.exe"
-& "$sdkBinPath\signtool.exe" sign /d "AzureSignTool"  /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-arm64\AzureSignTool.exe"
+& "$sdkBinPath\signtool.exe" sign /d "AzureSignTool" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-x64\AzureSignTool.exe"
+& "$sdkBinPath\signtool.exe" sign /d "AzureSignTool" /sha1 73f0844a95e35441a676cd6be1e79a3cd51d00b4 /fd SHA384 /td SHA384 /tr "http://timestamp.digicert.com" /du "https://github.com/vcsjones/AzureSignTool" "$objDir\AzureSignTool-arm64\AzureSignTool.exe"
 
 Copy-Item -Path "$objDir\AzureSignTool-x64\AzureSignTool.exe" -Destination "$outDir\AzureSignTool-x64.exe"
 Copy-Item -Path "$objDir\AzureSignTool-arm64\AzureSignTool.exe" -Destination "$outDir\AzureSignTool-arm64.exe"

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>azuresigntool</ToolCommandName>
     <Description>Azure Sign Tool is similar to signtool in the Windows SDK, with the major difference being that it uses Azure Key Vault for performing the signing process. The usage is like signtool, except with a limited set of options for signing and options for authenticating to Azure Key Vault.</Description>
@@ -27,6 +27,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <PackageReference Include="Microsoft.Bcl.Cryptography" />
   </ItemGroup>
 
   <ItemGroup>
