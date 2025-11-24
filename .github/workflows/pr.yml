@@ -15,7 +15,7 @@ jobs:
         os: ['windows-latest', 'windows-11-arm']
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       name: Checkout
     - uses: actions/setup-dotnet@v5
       with:
@@ -25,7 +25,7 @@ jobs:
   dependency-review:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       name: Checkout
     - uses: actions/dependency-review-action@v4
       name: Dependency Review
