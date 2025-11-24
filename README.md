@@ -65,7 +65,7 @@ The WinGet package manager installs the same binary this is available from the S
 
 ### Which to use?
 
-The NuGet tool offers smaller downloads that will install faster, however requires the .NET 8 SDK to be present on the system. The NuGet tool supports x64, x86, and ARM64.
+The NuGet tool offers smaller downloads that will install faster, however requires the .NET 10 SDK to be present on the system. The NuGet tool supports x64, x86, and ARM64.
 
 The single-file downloads do not require .NET to be installed on the system at all, only to be run on a supported version of Windows. They are entirely stand-alone binaries. This makes them useful in places that .NET is not installed at all, such as a CI pipeline that is not .NET-centric or desired. Single-file currently supports x64 and ARM64. If x86 support is needed, the NuGet tool is required.
 
@@ -190,4 +190,4 @@ a status code according to the complete signing operations.
 
 ## Requirements
 
-Windows 10 or Windows Server 2016 is required. Some features require later versions of Windows.
+Windows 10 or Windows Server 2016 is required. Some features require later versions of Windows. Support for Windows Server 2016 will be limited, so it is recommended to run on Windows Server 2022 or later.
