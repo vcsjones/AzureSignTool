@@ -3,6 +3,7 @@
     <PackageVersion Include="Azure.Identity" Version="1.17.0" />
     <PackageVersion Include="Azure.Security.KeyVault.Certificates" Version="4.8.0" />
     <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.Bcl.Cryptography" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
