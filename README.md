@@ -32,7 +32,7 @@ The `--help` or `sign --help` option provides more detail about each parameter.
 
 AzureSignTool can be installed in a couple of ways.
 
-### NuGet Tool
+### .NET Tool
 
 You can install AzureSignTool from NuGet using
 
@@ -42,6 +42,20 @@ AzureSignTool.exe
 ```
 
 It is recommended to specify an exact version such as 7.0.0, or a latest major-minor, like 7.0.* so that major versions, which often include a breaking change, are not automatically picked up.
+
+#### DNX
+
+You can use `dnx` to run AzureSignTool from NuGet provided that the .NET 10 SDK is installed:
+
+For example, to invoke the `sign` command:
+
+```powershell
+dnx AzureSignTool --yes sign <arguments>
+```
+
+Passing `--yes` will automatically confirm the installation of the AzureSignTool package. See `dnx --help` for more information about installing specific versions of AzureSignTool including pre-release versions of the package.
+
+`dnx` is an alias for `dotnet dnx`.
 
 ### Single-file Download
 
