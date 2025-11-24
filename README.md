@@ -55,7 +55,13 @@ dnx AzureSignTool --yes sign <arguments>
 
 Passing `--yes` will automatically confirm the installation of the AzureSignTool package. See `dnx --help` for more information about installing specific versions of AzureSignTool including pre-release versions of the package.
 
-`dnx` is an alias for `dotnet dnx`.
+`dnx` is an alias for `dotnet dnx`. It's a simpler way to install and run a .NET tool.
+
+`dnx` permits the use of `--` to explicitly separate the arguments to `dnx` and the tool itself. For example, `--version` is an argument that is understood by both dnx and AzureSignTool. To ensure `--version` is interpreted as an input to AzureSignTool, you can do:
+
+```powershell
+dnx AzureSignTool --yes -- --version
+```
 
 ### Single-file Download
 
