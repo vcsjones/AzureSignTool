@@ -20,7 +20,8 @@ Example usage:
 	  -v \
 	  -ifl C:\list\of\file\to\sign.txt \
 	  C:\additional\file\to\sign\program1.exe \
-	  C:\additional\file\to\sign\program2.exe
+	  C:\additional\file\to\sign\program2.exe \
+      C:\directory\of\libraries\*.dll
 
 
 The `--help` or `sign --help` option provides more detail about each parameter.
