@@ -5,6 +5,8 @@ permissions:
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   build:
