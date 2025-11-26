@@ -91,6 +91,8 @@ namespace AzureSignTool
         internal bool SkipSignedFiles { get; set; }
         internal bool AppendSignature { get; set; }
         internal string? AzureAuthority { get; set; }
+        internal string? Folder { get; set; }
+        internal string? SearchPatterns { get; set; }
 
         internal HashSet<string> AllFiles
         {
@@ -99,6 +101,14 @@ namespace AzureSignTool
                 if (_allFiles is null)
                 {
                     _allFiles = [];
+
+                    string[] folderSearchPatternResult = GetFolderSerachPattern(Folder, SearchPatterns);
+
+                    if( folderSearchPatternResult is not null && folderSearchPatternResult.Length > 0 )
+                    {
+                        AddArray(_allFiles, matcher, folderSearchPatternResult);
+                        return _allFiles;
+                    }
 
                     foreach (string file in Files)
                     {
@@ -153,6 +163,46 @@ namespace AzureSignTool
                         collection.Add(item);
                     }
                 }
+
+                static void AddArray(HashSet<string> collection, Matcher matcher, string[] items)
+                {
+                    if (items == null)
+                        return;
+
+                    foreach (var item in items)
+                    {
+                        Add(collection, matcher, item);
+                    }
+                }
+
+                static string[] GetFolderSerachPattern(string folder, string searchPatterns)
+                {
+                    if (!string.IsNullOrEmpty(folder))
+                    {
+                        if (Directory.Exists(folder))
+                        {
+                            if (!string.IsNullOrEmpty(searchPatterns))
+                            {
+                                string[] splitted = searchPatterns.Split(";");
+                                if (splitted.Length > 0)
+                                {
+                                    List<string> result = [];
+                                    foreach (string search in splitted)
+                                    {
+                                        string[] foundFiles = Directory.GetFiles(folder, search);
+
+                                        if (foundFiles != null)
+                                            result.AddRange(foundFiles);
+                                    }
+                                    
+                                    return result.ToArray();
+                                }
+                            }
+                        }
+                    }
+
+                    return [];
+                }
             }
         }
 
@@ -185,6 +235,8 @@ namespace AzureSignTool
             this.Add("s|skip-signed", "Skip files that are already signed.", v => SkipSignedFiles = v is not null);
             this.Add("as|append-signature", "Append the signature, has no effect with --skip-signed.", v => AppendSignature = v is not null);
             this.Add("au|azure-authority=", "The Azure Authority for Azure Key Vault.", v => AzureAuthority = v);
+            this.Add("f|folder=", "Folder for --search-filters.", v => Folder = v);
+            this.Add("p|search-patterns=", "Search pattern to use with --folder parmeter. (ie: *.exe;*.dll)", v => SearchPatterns = v);
             this.Add("<>", "[files]*", Files);
             Action = Run;
         }
@@ -487,6 +539,19 @@ namespace AzureSignTool
                 valid = false;
             }
 
+            if (Folder is not null && !string.IsNullOrEmpty(Folder) && !Directory.Exists(Folder))
+            {
+                context.Error.WriteLine($"Folder does not exist [{Folder}].");
+                valid = false;
+            }
+            
+            if ( Folder is not null && Directory.Exists(Folder) &&
+                string.IsNullOrEmpty(SearchPatterns) )
+            {
+                context.Error.WriteLine("--searchPatterns must be provided if Folder is given.");
+                valid = false;
+            }
+            
             if (AllFiles.Count == 0)
             {
                 context.Error.WriteLine("At least one file must be specified to sign.");
