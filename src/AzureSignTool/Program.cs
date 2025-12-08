@@ -333,7 +333,15 @@ namespace AzureSignTool
                                 return (state.succeeded + 1, state.failed);
                             }
 
-                            var result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                            int result = E_INVALIDARG;
+                            var thread = new System.Threading.Thread(o =>
+                            {
+                                result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                            });
+                            thread.SetApartmentState(ApartmentState.STA);
+                            thread.Start();
+                            thread.Join();
+
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
