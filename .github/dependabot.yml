@@ -9,8 +9,20 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      runtime:
+        applies-to: version-updates
+        patterns:
+          - "System.*"
+          - "Microsoft.Extensions.*"
+          - "Microsoft.Bcl.*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "System.*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Bcl.*"
         update-types: ["version-update:semver-major"]
