@@ -5,6 +5,7 @@ using Azure.Security.KeyVault.Certificates;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AzureSignTool
@@ -18,7 +19,7 @@ namespace AzureSignTool
             _logger = logger;
         }
 
-        public async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
+        public async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration, int timeoutSeconds)
         {
             TokenCredential credential;
             if (configuration.ManagedIdentity)
@@ -48,30 +49,38 @@ namespace AzureSignTool
 
             X509Certificate2 certificate;
             KeyVaultCertificate azureCertificate;
-            try
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)))
             {
-                var certClient = new CertificateClient(configuration.AzureKeyVaultUrl, credential);
-
-                if (!string.IsNullOrWhiteSpace(configuration.AzureKeyVaultCertificateVersion))
+                try
                 {
-                    _logger.LogTrace($"Retrieving version [{configuration.AzureKeyVaultCertificateVersion}] of certificate {configuration.AzureKeyVaultCertificateName}.");
-                    azureCertificate = (await certClient.GetCertificateVersionAsync(configuration.AzureKeyVaultCertificateName, configuration.AzureKeyVaultCertificateVersion).ConfigureAwait(false)).Value;
+                    var certClient = new CertificateClient(configuration.AzureKeyVaultUrl, credential);
+
+                    if (!string.IsNullOrWhiteSpace(configuration.AzureKeyVaultCertificateVersion))
+                    {
+                        _logger.LogTrace($"Retrieving version [{configuration.AzureKeyVaultCertificateVersion}] of certificate {configuration.AzureKeyVaultCertificateName}.");
+                        azureCertificate = (await certClient.GetCertificateVersionAsync(configuration.AzureKeyVaultCertificateName, configuration.AzureKeyVaultCertificateVersion, cts.Token).ConfigureAwait(false)).Value;
+                    }
+                    else
+                    {
+                        _logger.LogTrace($"Retrieving current version of certificate {configuration.AzureKeyVaultCertificateName}.");
+                        azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName, cts.Token).ConfigureAwait(false)).Value;
+                    }
+                    _logger.LogTrace($"Retrieved certificate with Id {azureCertificate.Id}.");
+
+                    certificate = X509CertificateLoader.LoadCertificate(azureCertificate.Cer);
                 }
-                else
+                catch (OperationCanceledException)
                 {
-                    _logger.LogTrace($"Retrieving current version of certificate {configuration.AzureKeyVaultCertificateName}.");
-                    azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName).ConfigureAwait(false)).Value;
+                    _logger.LogError($"Timeout connecting to Azure Key Vault at {configuration.AzureKeyVaultUrl}. The operation exceeded {timeoutSeconds} seconds.");
+                    return new TimeoutException($"The connection to Azure Key Vault timed out after {timeoutSeconds} seconds.");
                 }
-                _logger.LogTrace($"Retrieved certificate with Id {azureCertificate.Id}.");
+                catch (Exception e)
+                {
+                    _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate. Error message: {e.Message}.");
+                    _logger.LogTrace(e.ToString());
 
-                certificate = X509CertificateLoader.LoadCertificate(azureCertificate.Cer);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"Failed to retrieve certificate {configuration.AzureKeyVaultCertificateName} from Azure Key Vault. Please verify the name of the certificate and the permissions to the certificate. Error message: {e.Message}.");
-                _logger.LogTrace(e.ToString());
-
-                return e;
+                    return e;
+                }
             }
             var keyId = azureCertificate.KeyId;
 

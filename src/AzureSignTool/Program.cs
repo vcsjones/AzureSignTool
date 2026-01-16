@@ -91,6 +91,7 @@ namespace AzureSignTool
         internal bool SkipSignedFiles { get; set; }
         internal bool AppendSignature { get; set; }
         internal string? AzureAuthority { get; set; }
+        internal int KeyVaultTimeoutSeconds { get; set; } = 30;
 
         internal HashSet<string> AllFiles
         {
@@ -185,6 +186,7 @@ namespace AzureSignTool
             this.Add("s|skip-signed", "Skip files that are already signed.", v => SkipSignedFiles = v is not null);
             this.Add("as|append-signature", "Append the signature, has no effect with --skip-signed.", v => AppendSignature = v is not null);
             this.Add("au|azure-authority=", "The Azure Authority for Azure Key Vault.", v => AzureAuthority = v);
+            this.Add("kvto|azure-key-vault-timeout=", "The timeout in seconds for connecting to Azure Key Vault. Default is 30 seconds.", (int v) => KeyVaultTimeoutSeconds = v);
             this.Add("<>", "[files]*", Files);
             Action = Run;
         }
@@ -263,7 +265,7 @@ namespace AzureSignTool
                 }
                 bool appendSignature = AppendSignature;
                 var configurationDiscoverer = new KeyVaultConfigurationDiscoverer(logger);
-                var materializedResult = await configurationDiscoverer.Materialize(configuration);
+                var materializedResult = await configurationDiscoverer.Materialize(configuration, KeyVaultTimeoutSeconds);
                 AzureKeyVaultMaterializedConfiguration materialized;
 
                 switch (materializedResult)
@@ -271,6 +273,9 @@ namespace AzureSignTool
                     case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Ok ok:
                         materialized = ok.Value;
                         break;
+                    case ErrorOr<AzureKeyVaultMaterializedConfiguration>.Err err when err.Error is TimeoutException:
+                        logger.LogError("Timeout connecting to Azure Key Vault. The Key Vault URL could not be reached within {timeout} seconds.", KeyVaultTimeoutSeconds);
+                        return ERROR_TIMEOUT;
                     default:
                         logger.LogError("Failed to get configuration from Azure Key Vault.");
                         return E_INVALIDARG;
@@ -484,6 +489,12 @@ namespace AzureSignTool
             if (AzureAuthority is not null && AuthorityHostNames.GetUriForAzureAuthorityIdentifier(AzureAuthority) is null)
             {
                 context.Error.WriteLine($"'{AzureAuthority}' is not a valid value for '--azure-authority'. Allowed values are [{string.Join(", ", AuthorityHostNames.Keys)}].");
+                valid = false;
+            }
+
+            if (KeyVaultTimeoutSeconds <= 0)
+            {
+                context.Error.WriteLine("'--azure-key-vault-timeout' must be a positive integer.");
                 valid = false;
             }
 

@@ -12,5 +12,6 @@ namespace AzureSignTool
         public const int E_ALL_FAILED = unchecked((int)0xA0000002);
 
         public const int TRUST_E_SUBJECT_FORM_UNKNOWN = unchecked((int)0x800B0003);
+        public const int ERROR_TIMEOUT = unchecked((int)0x800705B5);
     }
 }
