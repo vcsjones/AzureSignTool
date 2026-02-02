@@ -68,6 +68,7 @@ namespace AzureSignTool
         internal string? KeyVaultUrl { get; set; }
         internal string? KeyVaultClientId { get; set; }
         internal string? KeyVaultClientSecret { get; set; }
+        internal string? KeyVaultClientAuthCertificate { get; set; }
         internal string? KeyVaultTenantId { get; set; }
         internal string? KeyVaultCertificate { get; set; }
         internal string? KeyVaultCertificateVersion { get; set; }
@@ -162,6 +163,7 @@ namespace AzureSignTool
             this.Add("kvu|azure-key-vault-url=", "The {URL} to an Azure Key Vault.", v => KeyVaultUrl = v);
             this.Add("kvi|azure-key-vault-client-id=", "The Client {ID} to authenticate to the Azure Key Vault.", v => KeyVaultClientId = v);
             this.Add("kvs|azure-key-vault-client-secret=", "The Client Secret to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
+            this.Add("kvac|azure-key-vault-client-auth-certificate=", "The Client certificate thumbprint to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
             this.Add("kvt|azure-key-vault-tenant-id=", "The Tenant Id to authenticate to the Azure Key Vault.", v => KeyVaultTenantId = v);
             this.Add("kvc|azure-key-vault-certificate=", "The name of the certificate in Azure Key Vault.", v => KeyVaultCertificate = v);
             this.Add("kvcv|azure-key-vault-certificate-version=", "The version of the certificate in Azure Key Vault to use. The current version of the certificate is used by default.", v => KeyVaultCertificateVersion = v);
@@ -436,9 +438,11 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            if (KeyVaultClientId is not null && KeyVaultClientSecret is null)
+            //TODO: Certificate thumbprint authentication support
+
+            if (KeyVaultClientId is not null && KeyVaultClientSecret is null && KeyVaultClientAuthCertificate is null)
             {
-                context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.");
+                context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' or '--azure-key-vault-client-auth-certificate' when using '--azure-key-vault-client-id'.");
                 valid = false;
             }
 
