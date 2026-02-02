@@ -163,7 +163,7 @@ namespace AzureSignTool
             this.Add("kvu|azure-key-vault-url=", "The {URL} to an Azure Key Vault.", v => KeyVaultUrl = v);
             this.Add("kvi|azure-key-vault-client-id=", "The Client {ID} to authenticate to the Azure Key Vault.", v => KeyVaultClientId = v);
             this.Add("kvs|azure-key-vault-client-secret=", "The Client Secret to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
-            this.Add("kvac|azure-key-vault-client-auth-certificate=", "The Client certificate thumbprint to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
+            this.Add("kvac|azure-key-vault-client-auth-certificate=", "The Client certificate thumbprint to authenticate to the Azure Key Vault.", v => KeyVaultClientAuthCertificate = v);
             this.Add("kvt|azure-key-vault-tenant-id=", "The Tenant Id to authenticate to the Azure Key Vault.", v => KeyVaultTenantId = v);
             this.Add("kvc|azure-key-vault-certificate=", "The name of the certificate in Azure Key Vault.", v => KeyVaultCertificate = v);
             this.Add("kvcv|azure-key-vault-certificate-version=", "The version of the certificate in Azure Key Vault to use. The current version of the certificate is used by default.", v => KeyVaultCertificateVersion = v);
@@ -236,6 +236,7 @@ namespace AzureSignTool
                     AzureClientSecret = KeyVaultClientSecret,
                     ManagedIdentity = UseManagedIdentity,
                     AzureAuthority = AzureAuthority,
+                    AzureCertificateThumbprint = KeyVaultClientAuthCertificate
                 };
 
                 TimeStampConfiguration timeStampConfiguration;
