@@ -439,8 +439,6 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            //TODO: Certificate thumbprint authentication support
-
             if (KeyVaultClientId is not null && KeyVaultClientSecret is null && KeyVaultClientAuthCertificate is null)
             {
                 context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' or '--azure-key-vault-client-auth-certificate' when using '--azure-key-vault-client-id'.");
