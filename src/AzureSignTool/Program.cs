@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -182,10 +183,17 @@ namespace AzureSignTool
 
         private ValueTask<int> Run(CommandRunContext context, string[] arguments)
         {
-            string[] additionalFiles = arguments;
-            HashSet<string> allFiles = GetAllFiles(additionalFiles);
+            bool valid = ValidateArguments(context);
+            HashSet<string>? allFiles = null;
 
-            if (ValidateArguments(context, allFiles))
+            if (valid)
+            {
+                string[] additionalFiles = arguments;
+                allFiles = GetAllFiles(additionalFiles);
+                valid = ValidateFiles(context, allFiles);
+            }
+
+            if (valid && allFiles is not null)
             {
                 return RunSign(allFiles);
             }
@@ -391,7 +399,7 @@ namespace AzureSignTool
             }
         }
 
-        private bool ValidateArguments(CommandRunContext context, HashSet<string> allFiles)
+        private bool ValidateArguments(CommandRunContext context)
         {
             bool valid = true;
 
@@ -480,6 +488,13 @@ namespace AzureSignTool
                 context.Error.WriteLine($"'{AzureAuthority}' is not a valid value for '--azure-authority'. Allowed values are [{string.Join(", ", AuthorityHostNames.Keys)}].");
                 valid = false;
             }
+
+            return valid;
+        }
+
+        private static bool ValidateFiles(CommandRunContext context, HashSet<string> allFiles)
+        {
+            bool valid = true;
 
             if (allFiles.Count == 0)
             {
