@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -62,9 +63,6 @@ namespace AzureSignTool
 
     internal sealed class SignCommand : Command
     {
-        private HashSet<string>? _allFiles;
-        private List<string> Files { get; set; } = [];
-
         internal string? KeyVaultUrl { get; set; }
         internal string? KeyVaultClientId { get; set; }
         internal string? KeyVaultClientSecret { get; set; }
@@ -92,66 +90,60 @@ namespace AzureSignTool
         internal bool AppendSignature { get; set; }
         internal string? AzureAuthority { get; set; }
 
-        internal HashSet<string> AllFiles
+        internal HashSet<string> GetAllFiles(string[] additionalFiles)
         {
-            get
+            HashSet<string> allFiles = [];
+
+            foreach (string file in additionalFiles)
             {
-                if (_allFiles is null)
+                Add(allFiles, file);
+            }
+
+            if (!string.IsNullOrWhiteSpace(InputFileList))
+            {
+                foreach(string line in File.ReadLines(InputFileList))
                 {
-                    _allFiles = [];
+                    Add(allFiles, line);
+                }
+            }
 
-                    foreach (string file in Files)
-                    {
-                        Add(_allFiles, file);
-                    }
+            return allFiles;
 
-                    if (!string.IsNullOrWhiteSpace(InputFileList))
-                    {
-                        foreach(string line in File.ReadLines(InputFileList))
-                        {
-                            Add(_allFiles, line);
-                        }
-                    }
+            static void Add(HashSet<string> collection, string item)
+            {
+                if (string.IsNullOrWhiteSpace(item))
+                {
+                    return;
                 }
 
-                return _allFiles;
-
-                static void Add(HashSet<string> collection, string item)
+                // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
+                // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
+                if (item.Contains('*'))
                 {
-                    if (string.IsNullOrWhiteSpace(item))
+                    Matcher matcher = new();
+                    string directory;
+
+                    // If the path is fully qualified then make it relative to the root since the matcher does not handle
+                    // absolute paths on its own.
+                    if (Path.IsPathFullyQualified(item) && Path.GetPathRoot(item) is string root)
                     {
-                        return;
-                    }
-
-                    // We require explicit glob pattern wildcards in order to treat it as a glob. e.g.
-                    // dir/ will not be treated as a directory. It must be explicitly dir/*.exe or dir/**/*.exe, for example.
-                    if (item.Contains('*'))
-                    {
-                        Matcher matcher = new();
-                        string directory;
-
-                        // If the path is fully qualified then make it relative to the root since the matcher does not handle
-                        // absolute paths on its own.
-                        if (Path.IsPathFullyQualified(item) && Path.GetPathRoot(item) is string root)
-                        {
-                            directory = root;
-                            matcher.AddInclude(Path.GetRelativePath(root, item));
-                        }
-                        else
-                        {
-                            directory = ".";
-                            matcher.AddInclude(item);
-                        }
-
-                        foreach (string match in matcher.GetResultsInFullPath(directory))
-                        {
-                            collection.Add(match);
-                        }
+                        directory = root;
+                        matcher.AddInclude(Path.GetRelativePath(root, item));
                     }
                     else
                     {
-                        collection.Add(item);
+                        directory = ".";
+                        matcher.AddInclude(item);
                     }
+
+                    foreach (string match in matcher.GetResultsInFullPath(directory))
+                    {
+                        collection.Add(match);
+                    }
+                }
+                else
+                {
+                    collection.Add(item);
                 }
             }
         }
@@ -185,15 +177,25 @@ namespace AzureSignTool
             this.Add("s|skip-signed", "Skip files that are already signed.", v => SkipSignedFiles = v is not null);
             this.Add("as|append-signature", "Append the signature, has no effect with --skip-signed.", v => AppendSignature = v is not null);
             this.Add("au|azure-authority=", "The Azure Authority for Azure Key Vault.", v => AzureAuthority = v);
-            this.Add("<>", "[files]*", Files);
+            this.Add("<>", "[files]*");
             Action = Run;
         }
 
         private ValueTask<int> Run(CommandRunContext context, string[] arguments)
         {
-            if (ValidateArguments(context))
+            bool valid = ValidateArguments(context);
+            HashSet<string>? allFiles = null;
+
+            if (valid)
             {
-                return RunSign();
+                string[] additionalFiles = arguments;
+                allFiles = GetAllFiles(additionalFiles);
+                valid = ValidateFiles(context, allFiles);
+            }
+
+            if (valid && allFiles is not null)
+            {
+                return RunSign(allFiles);
             }
             else
             {
@@ -203,7 +205,7 @@ namespace AzureSignTool
             }
         }
 
-        private async ValueTask<int> RunSign()
+        private async ValueTask<int> RunSign(HashSet<string> allFiles)
         {
             using (var loggerFactory = LoggerFactory.Create(ConfigureLogging))
             {
@@ -313,7 +315,7 @@ namespace AzureSignTool
                 using (var keyVault = await client.CreateRSAAsync())
                 using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
                 {
-                    Parallel.ForEach(AllFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
+                    Parallel.ForEach(allFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
                     {
                         if (cancellationSource.IsCancellationRequested)
                         {
@@ -352,7 +354,7 @@ namespace AzureSignTool
                             else
                             {
                                 logger.LogError("Signing failed with error {result}.", $"{result:X2}");
-                                if (!ContinueOnError || AllFiles.Count == 1)
+                                if (!ContinueOnError || allFiles.Count == 1)
                                 {
                                     logger.LogInformation("Stopping file signing.");
                                     pls.Stop();
@@ -487,14 +489,21 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            if (AllFiles.Count == 0)
+            return valid;
+        }
+
+        private static bool ValidateFiles(CommandRunContext context, HashSet<string> allFiles)
+        {
+            bool valid = true;
+
+            if (allFiles.Count == 0)
             {
                 context.Error.WriteLine("At least one file must be specified to sign.");
                 valid = false;
             }
             else
             {
-                foreach (string file in AllFiles)
+                foreach (string file in allFiles)
                 {
                     if (!File.Exists(file))
                     {
