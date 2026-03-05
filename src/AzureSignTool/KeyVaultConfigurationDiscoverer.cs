@@ -107,6 +107,10 @@ namespace AzureSignTool
                     return null;
                 }
             }
+            catch (CryptographicException)
+            {
+                return null;
+            }
             finally
             {
                 certStore.Close();
