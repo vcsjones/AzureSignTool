@@ -1,14 +1,17 @@
+#nullable enable
 using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Certificates;
 
 using Microsoft.Extensions.Logging;
 using System;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace AzureSignTool
 {
+
     internal class KeyVaultConfigurationDiscoverer
     {
         private readonly ILogger _logger;
@@ -32,7 +35,9 @@ namespace AzureSignTool
             else if (!string.IsNullOrWhiteSpace(configuration.AzureCertificateThumbprint))
             {
                 string certificateThumbPrint = configuration.AzureCertificateThumbprint;
-                X509Certificate2 clientCertificate = LoadCertificateByThumbprint(certificateThumbPrint, StoreLocation.CurrentUser);
+                X509Certificate2? clientCertificate = LoadCertificateByThumbprint(certificateThumbPrint, StoreLocation.CurrentUser);
+                clientCertificate ??= LoadCertificateByThumbprint(certificateThumbPrint, StoreLocation.LocalMachine);
+
                 credential = new ClientCertificateCredential(configuration.AzureTenantId, configuration.AzureClientId, clientCertificate);
             }
             else
@@ -89,7 +94,7 @@ namespace AzureSignTool
             return new AzureKeyVaultMaterializedConfiguration(credential, certificate, keyId);
         }
 
-        private X509Certificate2 LoadCertificateByThumbprint(string thumbprint, System.Security.Cryptography.X509Certificates.StoreLocation storeLocation)
+        private X509Certificate2? LoadCertificateByThumbprint(string thumbprint, StoreLocation storeLocation)
         {
             X509Store certStore = new X509Store(StoreName.My, storeLocation);
             certStore.Open(OpenFlags.ReadOnly);
@@ -106,6 +111,10 @@ namespace AzureSignTool
                     _logger.LogTrace($"Could not find certificate with thumbprint {thumbprint} in store {storeLocation}");
                     return null;
                 }
+            }
+            catch (CryptographicException)
+            {
+                return null;
             }
             finally
             {
