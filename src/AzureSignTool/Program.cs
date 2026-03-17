@@ -445,6 +445,12 @@ namespace AzureSignTool
                 valid = false;
             }
 
+            if (KeyVaultClientId is not null && KeyVaultClientAuthCertificate is not null && !IsValidHex(KeyVaultClientAuthCertificate))
+            {
+                context.Error.WriteLine("The value for '--azure-key-vault-client-auth-certificate' must be a valid hexadecimal string when using '--azure-key-vault-client-id'.");
+                valid = false;
+            }
+
             if (KeyVaultClientId is not null && KeyVaultTenantId is null)
             {
                 context.Error.WriteLine("Must supply '--azure-key-vault-tenant-id' when using '--azure-key-vault-client-id'.");
@@ -508,6 +514,29 @@ namespace AzureSignTool
             }
 
             return valid;
+        }
+
+        static bool IsValidHex(string input)
+        {
+            if (input is not { Length: 40 })
+            {
+                return false;
+            }
+
+            foreach (char c in input)
+            {
+                switch (c)
+                {
+                    case >= 'a' and <= 'f':
+                    case >= 'A' and <= 'F':
+                    case >= '0' and <= '9':
+                        continue;
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool ValidateHashAlgorithm(CommandRunContext context, string? input, string optionName)
