@@ -1,7 +1,7 @@
 <Project>
   <ItemGroup>
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
-    <PackageVersion Include="Azure.Security.KeyVault.Certificates" Version="4.8.0" />
+    <PackageVersion Include="Azure.Security.KeyVault.Certificates" Version="4.9.0" />
     <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.9.0" />
     <PackageVersion Include="Microsoft.Bcl.Cryptography" Version="10.0.6" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.6" />
