@@ -25,7 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       name: Checkout
-    - uses: actions/dependency-review-action@v4
+    - uses: actions/dependency-review-action@v5
       name: Dependency Review
       with:
         allow-licenses: MIT, Apache-2.0, BSD-2-Clause
