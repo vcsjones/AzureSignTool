@@ -66,6 +66,7 @@ namespace AzureSignTool
         internal string? KeyVaultUrl { get; set; }
         internal string? KeyVaultClientId { get; set; }
         internal string? KeyVaultClientSecret { get; set; }
+        internal string? KeyVaultClientAuthCertificate { get; set; }
         internal string? KeyVaultTenantId { get; set; }
         internal string? KeyVaultCertificate { get; set; }
         internal string? KeyVaultCertificateVersion { get; set; }
@@ -154,6 +155,7 @@ namespace AzureSignTool
             this.Add("kvu|azure-key-vault-url=", "The {URL} to an Azure Key Vault.", v => KeyVaultUrl = v);
             this.Add("kvi|azure-key-vault-client-id=", "The Client {ID} to authenticate to the Azure Key Vault.", v => KeyVaultClientId = v);
             this.Add("kvs|azure-key-vault-client-secret=", "The Client Secret to authenticate to the Azure Key Vault.", v => KeyVaultClientSecret = v);
+            this.Add("kvac|azure-key-vault-client-auth-certificate=", "The Client certificate thumbprint to authenticate to the Azure Key Vault.", v => KeyVaultClientAuthCertificate = v);
             this.Add("kvt|azure-key-vault-tenant-id=", "The Tenant Id to authenticate to the Azure Key Vault.", v => KeyVaultTenantId = v);
             this.Add("kvc|azure-key-vault-certificate=", "The name of the certificate in Azure Key Vault.", v => KeyVaultCertificate = v);
             this.Add("kvcv|azure-key-vault-certificate-version=", "The version of the certificate in Azure Key Vault to use. The current version of the certificate is used by default.", v => KeyVaultCertificateVersion = v);
@@ -236,6 +238,7 @@ namespace AzureSignTool
                     AzureClientSecret = KeyVaultClientSecret,
                     ManagedIdentity = UseManagedIdentity,
                     AzureAuthority = AzureAuthority,
+                    AzureCertificateThumbprint = KeyVaultClientAuthCertificate
                 };
 
                 TimeStampConfiguration timeStampConfiguration;
@@ -438,9 +441,15 @@ namespace AzureSignTool
                 valid = false;
             }
 
-            if (KeyVaultClientId is not null && KeyVaultClientSecret is null)
+            if (KeyVaultClientId is not null && KeyVaultClientSecret is null && KeyVaultClientAuthCertificate is null)
             {
-                context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' when using '--azure-key-vault-client-id'.");
+                context.Error.WriteLine("Must supply '--azure-key-vault-client-secret' or '--azure-key-vault-client-auth-certificate' when using '--azure-key-vault-client-id'.");
+                valid = false;
+            }
+
+            if (KeyVaultClientId is not null && KeyVaultClientAuthCertificate is not null && !IsValidHex(KeyVaultClientAuthCertificate))
+            {
+                context.Error.WriteLine("The value for '--azure-key-vault-client-auth-certificate' must be a valid hexadecimal string when using '--azure-key-vault-client-id'.");
                 valid = false;
             }
 
@@ -514,6 +523,29 @@ namespace AzureSignTool
             }
 
             return valid;
+        }
+
+        static bool IsValidHex(string input)
+        {
+            if (input is not { Length: 40 })
+            {
+                return false;
+            }
+
+            foreach (char c in input)
+            {
+                switch (c)
+                {
+                    case >= 'a' and <= 'f':
+                    case >= 'A' and <= 'F':
+                    case >= '0' and <= '9':
+                        continue;
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool ValidateHashAlgorithm(CommandRunContext context, string? input, string optionName)
