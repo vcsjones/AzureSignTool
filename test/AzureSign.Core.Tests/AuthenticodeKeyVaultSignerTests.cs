@@ -112,11 +112,48 @@ namespace AzureSign.Core.Tests
             }
         }
 
-        private string GetFileToSign()
+        // The .msix goes through the Appx SIP, which takes the SIGNER_SIGN_EX3_PARAMS
+        // and APPX_SIP_CLIENT_DATA structures instead of the plain PE path.
+        [Theory]
+        [MemberData(nameof(RsaCertificates))]
+        public void ShouldSignMsixWithRSASigningCertificates_Sha256FileDigest(string certificate)
+        {
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, TimeStampConfiguration.None);
+            var fileToSign = GetFileToSign("signtarget.msix");
+            var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(RsaCertificates))]
+        public void ShouldSignMsixWithRSASigningCertificates_Sha256FileDigest_WithTimestamps(string certificate)
+        {
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
+            var signer = new AuthenticodeKeyVaultSigner(signingCert.GetRSAPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
+            var fileToSign = GetFileToSign("signtarget.msix");
+            var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ECDsaCertificates))]
+        public void ShouldSignMsixWithECDsaSigningCertificates_Sha256FileDigest_WithTimestamps(string certificate)
+        {
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(certificate, "test", X509KeyStorageFlags.EphemeralKeySet);
+            var timestampConfig = new TimeStampConfiguration("http://timestamp.digicert.com", HashAlgorithmName.SHA256, TimeStampType.RFC3161);
+            var signer = new AuthenticodeKeyVaultSigner(signingCert.GetECDsaPrivateKey(), signingCert, HashAlgorithmName.SHA256, timestampConfig);
+            var fileToSign = GetFileToSign("signtarget.msix");
+            var result = signer.SignFile(fileToSign, null, null, null);
+            Assert.Equal(0, result);
+        }
+
+        private string GetFileToSign(string source = "signtarget.exe")
         {
             var guid = Guid.NewGuid();
-            var path = Path.Combine(_scratchDirectory.FullName, $"{guid}.exe");
-            File.Copy("signtarget.exe", path);
+            var path = Path.Combine(_scratchDirectory.FullName, $"{guid}{Path.GetExtension(source)}");
+            File.Copy(source, path);
             return path;
         }
 

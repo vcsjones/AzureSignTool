@@ -1,16 +1,22 @@
-using AzureSign.Core.Interop;
+using static Windows.Win32.PInvoke;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
+
+using Windows.Win32.Security.Cryptography;
+
+// CsWin32 marks the crypt32 store APIs as Windows-only. This library is Windows-only by design,
+// so the platform compatibility analyzer's reachability warnings do not apply here.
+#pragma warning disable CA1416
 
 namespace AzureSign.Core
 {
     internal sealed class MemoryCertificateStore : IDisposable
     {
-        private IntPtr _handle;
+        private HCERTSTORE _handle;
         private readonly X509Store _store;
 
-        private MemoryCertificateStore(IntPtr handle)
+        private MemoryCertificateStore(HCERTSTORE handle)
         {
             _handle = handle;
             try
@@ -27,11 +33,11 @@ namespace AzureSign.Core
             }
         }
 
-        public static MemoryCertificateStore Create()
+        public unsafe static MemoryCertificateStore Create()
         {
             const string STORE_TYPE = "Memory";
-            var handle = crypt32.CertOpenStore(STORE_TYPE, CertEncodingType.NONE, IntPtr.Zero, CertOpenStoreFlags.NONE, IntPtr.Zero);
-            if (handle == IntPtr.Zero)
+            var handle = CertOpenStore(STORE_TYPE, 0, 0, null);
+            if (handle.IsNull)
             {
                 throw new InvalidOperationException("Failed to create a memory certificate store.");
             }
@@ -42,7 +48,7 @@ namespace AzureSign.Core
         void IDisposable.Dispose() => Dispose(true);
         ~MemoryCertificateStore() => Dispose(false);
 
-        public IntPtr Handle => _store.StoreHandle;
+        public HCERTSTORE Handle => (HCERTSTORE)_store.StoreHandle;
         public void Add(X509Certificate2 certificate) => _store.Add(certificate);
         public void Add(X509Certificate2Collection collection) => _store.AddRange(collection);
         public X509Certificate2Collection Certificates => _store.Certificates;
@@ -61,10 +67,10 @@ namespace AzureSign.Core
 
         private void FreeHandle()
         {
-            if (_handle != IntPtr.Zero)
+            if (!_handle.IsNull)
             {
-                var closed = crypt32.CertCloseStore(_handle, CertCloreStoreFlags.NONE);
-                _handle = IntPtr.Zero;
+                var closed = CertCloseStore(_handle, 0);
+                _handle = HCERTSTORE.Null;
                 Debug.Assert(closed);
             }
         }
