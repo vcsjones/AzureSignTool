@@ -199,6 +199,30 @@ This tool uses the same mechanisms for signing as the Windows SDK `signtool`. It
 However, the formats that `azuresigntool` and `signtool` support vary by operating system and which Subject Interface Packages are
 present on the system.
 
+### NuGet Packages
+
+NuGet packages (`.nupkg`) and symbol packages (`.snupkg`) are signed with a NuGet author signature, the same kind of signature
+produced by `dotnet nuget sign`. Files are detected by their extension, so NuGet packages can be signed alongside other files in a
+single invocation:
+
+    AzureSignTool.exe sign -kvu https://my-vault.vault.azure.net \
+	  -kvm -kvc my-key-name \
+	  -fd sha256 \
+	  -tr http://timestamp.digicert.com -td sha256 \
+	  C:\packages\*.nupkg
+
+When signing NuGet packages:
+
+* `--file-digest` and `--timestamp-digest` must be `sha256`, `sha384`, or `sha512`. SHA1 is not permitted.
+* Only RFC 3161 timestamps (`--timestamp-rfc3161`) are supported. `--timestamp-authenticode` cannot be used.
+* `--append-signature` is not supported. A package can only have one author signature, and any existing signature is replaced
+	unless `--skip-signed` is specified.
+* `--description`, `--description-url`, `--page-hashing`, and `--no-page-hashing` have no effect.
+* ZIP64 packages cannot be signed.
+
+The certificate must meet the [NuGet signed package requirements](https://learn.microsoft.com/nuget/reference/signed-packages-reference),
+such as having the code signing extended key usage, to be accepted by nuget.org. Signed packages can be verified with `dotnet nuget verify`.
+
 ## Exit Codes
 
 The exit code is an HRESULT. Successfully signing produces a result of `S_OK` ("0"). If all files fail to sign, the exit code is

@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace AzureSign.Core
 {
@@ -27,6 +28,12 @@ namespace AzureSign.Core
                 nameof(HashAlgorithmName.SHA512) => "2.16.840.1.101.3.4.2.3\0"u8,
                 _ => throw new NotSupportedException("The algorithm specified is not supported."),
             };
+        }
+
+        public static string HashAlgorithmToOid(HashAlgorithmName hashAlgorithmName)
+        {
+            ReadOnlySpan<byte> oid = HashAlgorithmToOidAsciiTerminated(hashAlgorithmName);
+            return Encoding.ASCII.GetString(oid.Slice(0, oid.Length - 1).ToArray());
         }
     }
 }

@@ -191,6 +191,7 @@ namespace AzureSignTool
                 string[] additionalFiles = arguments;
                 allFiles = GetAllFiles(additionalFiles);
                 valid = ValidateFiles(context, allFiles);
+                valid &= ValidateNuGetPackageOptions(context, allFiles);
             }
 
             if (valid && allFiles is not null)
@@ -312,8 +313,22 @@ namespace AzureSignTool
 
                 var client = new CryptographyClient(materialized.KeyId, materialized.TokenCredential, clientOptions);
 
+                bool hasNuGetPackages = false, hasOtherFiles = false;
+                foreach (string file in allFiles)
+                {
+                    if (NuGetKeyVaultSigner.IsNuGetPackage(file))
+                    {
+                        hasNuGetPackages = true;
+                    }
+                    else
+                    {
+                        hasOtherFiles = true;
+                    }
+                }
+
                 using (var keyVault = await client.CreateRSAAsync())
-                using (var signer = new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates))
+                using (var signer = hasOtherFiles ? new AuthenticodeKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates) : null)
+                using (var nuGetSigner = hasNuGetPackages ? new NuGetKeyVaultSigner(keyVault, materialized.PublicCertificate, ParseHashAlgorithm(FileDigestAlgorithm), timeStampConfiguration, certificates) : null)
                 {
                     Parallel.ForEach(allFiles, options, () => (succeeded: 0, failed: 0), (filePath, pls, state) =>
                     {
@@ -335,7 +350,9 @@ namespace AzureSignTool
                                 return (state.succeeded + 1, state.failed);
                             }
 
-                            var result = signer.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
+                            var result = NuGetKeyVaultSigner.IsNuGetPackage(filePath)
+                                ? nuGetSigner!.SignFile(filePath, logger, cancellationSource.Token)
+                                : signer!.SignFile(filePath, SignDescription, SignDescriptionUrl, performPageHashing, logger, appendSignature);
                             switch (result)
                             {
                                 case COR_E_BADIMAGEFORMAT:
@@ -389,6 +406,11 @@ namespace AzureSignTool
 
         private static bool IsSigned(string filePath)
         {
+            if (NuGetKeyVaultSigner.IsNuGetPackage(filePath))
+            {
+                return NuGetKeyVaultSigner.IsSigned(filePath);
+            }
+
             try
             {
                 return X509Certificate2.GetCertContentType(filePath) == X509ContentType.Authenticode;
@@ -511,6 +533,53 @@ namespace AzureSignTool
                         valid = false;
                     }
                 }
+            }
+
+            return valid;
+        }
+
+        private bool ValidateNuGetPackageOptions(CommandRunContext context, HashSet<string> allFiles)
+        {
+            bool hasNuGetPackages = false;
+
+            foreach (string file in allFiles)
+            {
+                if (NuGetKeyVaultSigner.IsNuGetPackage(file))
+                {
+                    hasNuGetPackages = true;
+                    break;
+                }
+            }
+
+            if (!hasNuGetPackages)
+            {
+                return true;
+            }
+
+            bool valid = true;
+
+            if ("SHA1".Equals(FileDigestAlgorithm, StringComparison.OrdinalIgnoreCase))
+            {
+                context.Error.WriteLine("NuGet packages cannot be signed with a SHA1 '--file-digest'.");
+                valid = false;
+            }
+
+            if (Rfc3161TimestampUrl is not null && "SHA1".Equals(TimestampDigestAlgorithm, StringComparison.OrdinalIgnoreCase))
+            {
+                context.Error.WriteLine("NuGet packages cannot be timestamped with a SHA1 '--timestamp-digest'.");
+                valid = false;
+            }
+
+            if (AuthenticodeTimestampUrl is not null)
+            {
+                context.Error.WriteLine("NuGet packages cannot be timestamped with '--timestamp-authenticode'. Use '--timestamp-rfc3161' instead.");
+                valid = false;
+            }
+
+            if (AppendSignature)
+            {
+                context.Error.WriteLine("NuGet packages do not support '--append-signature'.");
+                valid = false;
             }
 
             return valid;

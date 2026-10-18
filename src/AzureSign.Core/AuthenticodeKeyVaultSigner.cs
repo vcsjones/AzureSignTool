@@ -43,21 +43,8 @@ namespace AzureSign.Core
             _timeStampConfiguration = timeStampConfiguration ?? throw new ArgumentNullException(nameof(timeStampConfiguration));
             _signingAlgorithm = signingAlgorithm ?? throw new ArgumentNullException(nameof(signingAlgorithm));
             _certificateStore = MemoryCertificateStore.Create();
-            _chain = new X509Chain();
+            _chain = CertificateChainBuilder.Build(signingCertificate, additionalCertificates);
 
-            if (additionalCertificates is not null)
-            {
-                _chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
-            }
-
-            //We don't care about the trustworthiness of the cert. We just want a chain to sign with.
-            _chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-
-
-            if (!_chain.Build(signingCertificate))
-            {
-                throw new InvalidOperationException("Failed to build chain for certificate.");
-            }
             for (var i = 0; i < _chain.ChainElements.Count; i++)
             {
                 _certificateStore.Add(_chain.ChainElements[i].Certificate);
