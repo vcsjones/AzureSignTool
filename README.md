@@ -104,6 +104,13 @@ The single-file downloads do not require .NET to be installed on the system at a
 	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
 	directly with the `--azure-key-vault-accesstoken` option or when using managed identities with `--azure-key-vault-managed-identity`. If this parameter is supplied, `--azure-key-vault-client-id` and `--azure-key-vault-tenant-id` must be supplied as well.
 
+* `--azure-key-vault-client-auth-certificate` [short: `-kvac`, required: possibly]: This defines the thumbprint of a client authentication certificate, which is used to generate an access token for authentication to Azure. This parameter is not required if an access token is supplied
+	directly with the `--azure-key-vault-accesstoken` option or when using managed identities with `--azure-key-vault-managed-identity`. 
+    If this parameter is supplied, `--azure-key-vault-client-id` and `--azure-key-vault-tenant-id` must be supplied as well and `--azure-key-vault-client-secret` must not be used.
+    Instead of using a secret a certificate is reuqired installed on the build machine executing the AzureSignTool and the public key must be known in the 
+    Azure Key Valut. The Thumbprint of the certificate is used here. 
+    This options allows more control which computer can sign and use the codesigning certificate, because it does not depend on the knowledge of the secret in the build pipeline.
+
 * `--azure-key-vault-tenant-id` [short: `-kvt`, required: possibly]: This is the tenant id used to authenticate to
 	Azure, which will be used to generate an access token. This parameter is not required if an access token is supplied
 	directly with the `--azure-key-vault-accesstoken` option or when using managed identities with `--azure-key-vault-managed-identity`. If this parameter is supplied, `--azure-key-vault-client-id` and `--azure-key-vault-client-secret` must be supplied as well.
